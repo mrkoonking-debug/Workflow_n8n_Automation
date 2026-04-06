@@ -1,0 +1,282 @@
+<script setup>
+import { ref, computed, onMounted } from 'vue'
+import { Doughnut, Bar } from 'vue-chartjs'
+import {
+  Chart as ChartJS,
+  ArcElement,
+  BarElement,
+  CategoryScale,
+  LinearScale,
+  Tooltip,
+  Legend,
+} from 'chart.js'
+import api from '../services/api.js'
+
+ChartJS.register(ArcElement, BarElement, CategoryScale, LinearScale, Tooltip, Legend)
+
+const equipment = ref([])
+const borrowHistory = ref([])
+const loading = ref(true)
+
+onMounted(async () => {
+  const [eq, history] = await Promise.all([
+    api.getEquipment(),
+    api.getBorrowHistory(),
+  ])
+  equipment.value = eq
+  borrowHistory.value = history
+  loading.value = false
+})
+
+// Stats
+const totalEquipment = computed(() => equipment.value.reduce((sum, e) => sum + Number(e.จำนวนทั้งหมด), 0))
+const totalBorrowed = computed(() => equipment.value.reduce((sum, e) => sum + (Number(e.จำนวนทั้งหมด) - Number(e.จำนวนคงเหลือ)), 0))
+const totalAvailable = computed(() => equipment.value.reduce((sum, e) => sum + Number(e.จำนวนคงเหลือ), 0))
+const overdueCount = computed(() => {
+  const today = new Date().toISOString().split('T')[0]
+  return borrowHistory.value.filter(r => r.สถานะ === 'ยืมอยู่' && r.กำหนดคืน < today).length
+})
+
+// Category chart
+const categoryData = computed(() => {
+  const cats = {}
+  equipment.value.forEach(e => {
+    cats[e.หมวดหมู่] = (cats[e.หมวดหมู่] || 0) + Number(e.จำนวนทั้งหมด)
+  })
+  return {
+    labels: Object.keys(cats),
+    datasets: [{
+      data: Object.values(cats),
+      backgroundColor: [
+        'rgba(99, 102, 241, 0.8)',
+        'rgba(16, 185, 129, 0.8)',
+        'rgba(244, 63, 94, 0.8)',
+        'rgba(245, 158, 11, 0.8)',
+        'rgba(6, 182, 212, 0.8)',
+        'rgba(139, 92, 246, 0.8)',
+        'rgba(236, 72, 153, 0.8)',
+      ],
+      borderColor: 'transparent',
+      borderWidth: 0,
+      hoverOffset: 8,
+    }]
+  }
+})
+
+const doughnutOptions = {
+  responsive: true,
+  maintainAspectRatio: false,
+  cutout: '65%',
+  plugins: {
+    legend: {
+      position: 'bottom',
+      labels: {
+        color: '#94a3b8',
+        font: { family: 'Inter', size: 12 },
+        padding: 16,
+        usePointStyle: true,
+        pointStyleWidth: 10,
+      }
+    },
+    tooltip: {
+      backgroundColor: 'rgba(15,15,25,0.95)',
+      titleColor: '#f1f5f9',
+      bodyColor: '#94a3b8',
+      padding: 12,
+      cornerRadius: 8,
+      titleFont: { family: 'Inter', weight: '600' },
+      bodyFont: { family: 'Inter' },
+    }
+  }
+}
+
+// Top borrowed equipment
+const topBorrowedData = computed(() => {
+  const counts = {}
+  borrowHistory.value.forEach(r => {
+    counts[r.อุปกรณ์] = (counts[r.อุปกรณ์] || 0) + 1
+  })
+  const sorted = Object.entries(counts).sort((a, b) => b[1] - a[1]).slice(0, 5)
+  return {
+    labels: sorted.map(([id]) => {
+      const eq = equipment.value.find(e => e.รหัสอุปกรณ์ === id)
+      return eq ? eq.ชื่ออุปกรณ์.substring(0, 20) : id
+    }),
+    datasets: [{
+      label: 'จำนวนครั้งที่ถูกยืม',
+      data: sorted.map(([, count]) => count),
+      backgroundColor: 'rgba(99, 102, 241, 0.6)',
+      borderColor: 'rgba(99, 102, 241, 1)',
+      borderWidth: 1,
+      borderRadius: 6,
+      barThickness: 28,
+    }]
+  }
+})
+
+const barOptions = {
+  responsive: true,
+  maintainAspectRatio: false,
+  indexAxis: 'y',
+  scales: {
+    x: {
+      grid: { color: 'rgba(255,255,255,0.04)' },
+      ticks: { color: '#64748b', font: { family: 'Inter', size: 11 }, stepSize: 1 },
+    },
+    y: {
+      grid: { display: false },
+      ticks: { color: '#94a3b8', font: { family: 'Inter', size: 11 } },
+    },
+  },
+  plugins: {
+    legend: { display: false },
+    tooltip: {
+      backgroundColor: 'rgba(15,15,25,0.95)',
+      titleColor: '#f1f5f9',
+      bodyColor: '#94a3b8',
+      padding: 12,
+      cornerRadius: 8,
+    }
+  }
+}
+
+// Recent activity
+const recentActivity = computed(() => {
+  return [...borrowHistory.value].sort((a, b) => {
+    const dateA = a.วันที่คืน !== '-' ? a.วันที่คืน : a.วันที่ยืม
+    const dateB = b.วันที่คืน !== '-' ? b.วันที่คืน : b.วันที่ยืม
+    return dateB.localeCompare(dateA)
+  }).slice(0, 5)
+})
+
+function getEquipmentName(id) {
+  const eq = equipment.value.find(e => e.รหัสอุปกรณ์ === id)
+  return eq ? eq.ชื่ออุปกรณ์ : id
+}
+</script>
+
+<template>
+  <div class="fade-in">
+    <div class="page-header">
+      <h2>📊 แดชบอร์ด</h2>
+      <p>ภาพรวมระบบยืม-คืนอุปกรณ์</p>
+    </div>
+
+    <!-- Loading -->
+    <div v-if="loading" class="loading-overlay">
+      <div class="spinner"></div>
+      <span>กำลังโหลดข้อมูล...</span>
+    </div>
+
+    <template v-else>
+      <!-- Stats Cards -->
+      <div class="stats-grid">
+        <div class="stat-card blue">
+          <div class="stat-card-header">
+            <span class="stat-card-label">อุปกรณ์ทั้งหมด</span>
+            <div class="stat-card-icon">📦</div>
+          </div>
+          <div class="stat-card-value">{{ totalEquipment }}</div>
+          <div class="stat-card-desc">{{ equipment.length }} รายการ</div>
+        </div>
+
+        <div class="stat-card amber">
+          <div class="stat-card-header">
+            <span class="stat-card-label">ถูกยืมอยู่</span>
+            <div class="stat-card-icon">📋</div>
+          </div>
+          <div class="stat-card-value">{{ totalBorrowed }}</div>
+          <div class="stat-card-desc">กำลังถูกใช้งาน</div>
+        </div>
+
+        <div class="stat-card emerald">
+          <div class="stat-card-header">
+            <span class="stat-card-label">พร้อมใช้</span>
+            <div class="stat-card-icon">✅</div>
+          </div>
+          <div class="stat-card-value">{{ totalAvailable }}</div>
+          <div class="stat-card-desc">พร้อมให้ยืม</div>
+        </div>
+
+        <div class="stat-card rose">
+          <div class="stat-card-header">
+            <span class="stat-card-label">เกินกำหนดคืน</span>
+            <div class="stat-card-icon">⚠️</div>
+          </div>
+          <div class="stat-card-value">{{ overdueCount }}</div>
+          <div class="stat-card-desc">ต้องติดตาม</div>
+        </div>
+      </div>
+
+      <!-- Charts -->
+      <div class="grid-2" style="margin-bottom: 24px;">
+        <div class="card">
+          <div class="card-header">
+            <h3>📊 สัดส่วนหมวดหมู่อุปกรณ์</h3>
+          </div>
+          <div class="card-body">
+            <div class="chart-container" style="height: 280px;">
+              <Doughnut :data="categoryData" :options="doughnutOptions" />
+            </div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-header">
+            <h3>🏆 อุปกรณ์ยืมบ่อยที่สุด</h3>
+          </div>
+          <div class="card-body">
+            <div class="chart-container" style="height: 280px;">
+              <Bar :data="topBorrowedData" :options="barOptions" />
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Recent Activity -->
+      <div class="card">
+        <div class="card-header">
+          <h3>🕐 กิจกรรมล่าสุด</h3>
+        </div>
+        <div class="card-body">
+          <div class="table-wrapper">
+            <table>
+              <thead>
+                <tr>
+                  <th>รหัสยืม</th>
+                  <th>ผู้ยืม</th>
+                  <th>อุปกรณ์</th>
+                  <th>วันที่ยืม</th>
+                  <th>กำหนดคืน</th>
+                  <th>สถานะ</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr v-for="item in recentActivity" :key="item.รหัสยืม">
+                  <td style="font-weight: 600; color: var(--accent-primary-light);">{{ item.รหัสยืม }}</td>
+                  <td>{{ item.ชื่อผู้ยืม }}</td>
+                  <td>{{ getEquipmentName(item.อุปกรณ์) }}</td>
+                  <td>{{ item.วันที่ยืม }}</td>
+                  <td>{{ item.กำหนดคืน }}</td>
+                  <td>
+                    <span
+                      class="badge"
+                      :class="{
+                        'badge-borrowed': item.สถานะ === 'ยืมอยู่' && item.กำหนดคืน >= new Date().toISOString().split('T')[0],
+                        'badge-returned': item.สถานะ === 'คืนแล้ว',
+                        'badge-overdue': item.สถานะ === 'ยืมอยู่' && item.กำหนดคืน < new Date().toISOString().split('T')[0],
+                      }"
+                    >
+                      <span class="badge-dot"></span>
+                      {{ item.สถานะ === 'ยืมอยู่' && item.กำหนดคืน < new Date().toISOString().split('T')[0] ? 'เกินกำหนด' : item.สถานะ }}
+                    </span>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </template>
+  </div>
+</template>

@@ -1,0 +1,67 @@
+{
+  "name": "4 - ดึงประวัติยืม-คืน (Get Borrow History)",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "GET",
+        "path": "borrow-history",
+        "responseMode": "responseNode",
+        "options": {
+          "responseHeaders": {
+            "entries": [
+              { "name": "Access-Control-Allow-Origin", "value": "*" }
+            ]
+          }
+        }
+      },
+      "id": "webhook-get-history",
+      "name": "Webhook - Get History",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [250, 300],
+      "webhookId": "borrow-history"
+    },
+    {
+      "parameters": {
+        "operation": "read",
+        "documentId": { "__rl": true, "mode": "list", "value": "" },
+        "sheetName": { "__rl": true, "mode": "list", "value": "รายการยืม" },
+        "options": {}
+      },
+      "id": "read-borrow-history",
+      "name": "Read รายการยืม Sheet",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.5,
+      "position": [470, 300],
+      "credentials": { "googleSheetsOAuth2Api": { "id": "", "name": "Google Sheets" } }
+    },
+    {
+      "parameters": {
+        "respondWith": "allIncomingItems",
+        "options": {
+          "responseHeaders": {
+            "entries": [
+              { "name": "Access-Control-Allow-Origin", "value": "*" },
+              { "name": "Content-Type", "value": "application/json" }
+            ]
+          }
+        }
+      },
+      "id": "respond-history",
+      "name": "Respond - ประวัติทั้งหมด",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [690, 300]
+    }
+  ],
+  "connections": {
+    "Webhook - Get History": { "main": [[{ "node": "Read รายการยืม Sheet", "type": "main", "index": 0 }]] },
+    "Read รายการยืม Sheet": { "main": [[{ "node": "Respond - ประวัติทั้งหมด", "type": "main", "index": 0 }]] }
+  },
+  "settings": { "executionOrder": "v1" },
+  "staticData": null,
+  "tags": [{ "name": "Equipment Lending" }],
+  "triggerCount": 0,
+  "updatedAt": "2026-04-07T00:00:00.000Z",
+  "versionId": "1"
+}

@@ -1,0 +1,214 @@
+{
+  "name": "1 - ยืมอุปกรณ์ (Borrow Equipment)",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "borrow",
+        "responseMode": "responseNode",
+        "options": {
+          "responseHeaders": {
+            "entries": [
+              { "name": "Access-Control-Allow-Origin", "value": "*" }
+            ]
+          }
+        }
+      },
+      "id": "webhook-borrow",
+      "name": "Webhook - Borrow",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [250, 300],
+      "webhookId": "borrow"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            { "id": "equipmentId", "name": "equipmentId", "value": "={{ $json.body.equipmentId }}", "type": "string" },
+            { "id": "studentId", "name": "studentId", "value": "={{ $json.body.studentId }}", "type": "string" },
+            { "id": "name", "name": "name", "value": "={{ $json.body.name }}", "type": "string" },
+            { "id": "email", "name": "email", "value": "={{ $json.body.email }}", "type": "string" },
+            { "id": "faculty", "name": "faculty", "value": "={{ $json.body.faculty }}", "type": "string" },
+            { "id": "returnDate", "name": "returnDate", "value": "={{ $json.body.returnDate }}", "type": "string" }
+          ]
+        }
+      },
+      "id": "edit-fields-borrow",
+      "name": "Edit Fields - รับข้อมูลยืม",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [470, 300]
+    },
+    {
+      "parameters": {
+        "operation": "read",
+        "documentId": { "__rl": true, "mode": "list", "value": "" },
+        "sheetName": { "__rl": true, "mode": "list", "value": "อุปกรณ์" },
+        "options": {}
+      },
+      "id": "read-equipment",
+      "name": "Read Equipment Sheet",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.5,
+      "position": [690, 300],
+      "credentials": { "googleSheetsOAuth2Api": { "id": "", "name": "Google Sheets" } }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": { "caseSensitive": true, "leftValue": "", "typeValidation": "strict" },
+          "conditions": [
+            {
+              "id": "stock-check",
+              "leftValue": "={{ $json['จำนวนคงเหลือ'] }}",
+              "rightValue": "0",
+              "operator": { "type": "number", "operation": "gt" }
+            }
+          ],
+          "combinator": "and"
+        }
+      },
+      "id": "if-stock",
+      "name": "IF - ตรวจสอบสต็อก",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [910, 300]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            { "id": "borrowId", "name": "borrowId", "value": "=BR{{ $now.format('yyyyMMddHHmmss') }}", "type": "string" },
+            { "id": "borrowDate", "name": "borrowDate", "value": "={{ $now.format('yyyy-MM-dd') }}", "type": "string" }
+          ]
+        }
+      },
+      "id": "generate-id",
+      "name": "สร้างรหัสยืม",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [1130, 200]
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": { "__rl": true, "mode": "list", "value": "" },
+        "sheetName": { "__rl": true, "mode": "list", "value": "รายการยืม" },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "รหัสยืม": "={{ $json.borrowId }}",
+            "รหัสนศ.": "={{ $('Edit Fields - รับข้อมูลยืม').item.json.studentId }}",
+            "ชื่อผู้ยืม": "={{ $('Edit Fields - รับข้อมูลยืม').item.json.name }}",
+            "Email": "={{ $('Edit Fields - รับข้อมูลยืม').item.json.email }}",
+            "อุปกรณ์": "={{ $('Edit Fields - รับข้อมูลยืม').item.json.equipmentId }}",
+            "วันที่ยืม": "={{ $json.borrowDate }}",
+            "กำหนดคืน": "={{ $('Edit Fields - รับข้อมูลยืม').item.json.returnDate }}",
+            "สถานะ": "ยืมอยู่",
+            "วันที่คืน": "-"
+          }
+        },
+        "options": {}
+      },
+      "id": "append-borrow",
+      "name": "Append to รายการยืม",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.5,
+      "position": [1350, 200],
+      "credentials": { "googleSheetsOAuth2Api": { "id": "", "name": "Google Sheets" } }
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "documentId": { "__rl": true, "mode": "list", "value": "" },
+        "sheetName": { "__rl": true, "mode": "list", "value": "อุปกรณ์" },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "จำนวนคงเหลือ": "={{ $json['จำนวนคงเหลือ'] - 1 }}"
+          }
+        },
+        "options": {}
+      },
+      "id": "update-stock-decrease",
+      "name": "Update Equipment - ลดจำนวน",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.5,
+      "position": [1570, 200],
+      "credentials": { "googleSheetsOAuth2Api": { "id": "", "name": "Google Sheets" } }
+    },
+    {
+      "parameters": {
+        "sendTo": "={{ $('Edit Fields - รับข้อมูลยืม').item.json.email }}",
+        "subject": "=✅ ยืนยันการยืมอุปกรณ์ - {{ $('สร้างรหัสยืม').item.json.borrowId }}",
+        "message": "=สวัสดีคุณ {{ $('Edit Fields - รับข้อมูลยืม').item.json.name }}\n\nการยืมอุปกรณ์สำเร็จแล้ว!\n\n📋 รายละเอียด:\n- รหัสยืม: {{ $('สร้างรหัสยืม').item.json.borrowId }}\n- อุปกรณ์: {{ $('Edit Fields - รับข้อมูลยืม').item.json.equipmentId }}\n- วันที่ยืม: {{ $('สร้างรหัสยืม').item.json.borrowDate }}\n- กำหนดคืน: {{ $('Edit Fields - รับข้อมูลยืม').item.json.returnDate }}\n\n⚠️ กรุณาคืนอุปกรณ์ตรงเวลา\n\nขอบคุณครับ/ค่ะ\nSmart Equipment Lending System",
+        "options": {}
+      },
+      "id": "send-email-borrow",
+      "name": "Send Email - ยืนยันยืม",
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.1,
+      "position": [1790, 200],
+      "credentials": { "gmailOAuth2": { "id": "", "name": "Gmail" } }
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={ \"success\": true, \"borrowId\": \"{{ $('สร้างรหัสยืม').item.json.borrowId }}\", \"message\": \"ยืมสำเร็จ! รหัสยืม: {{ $('สร้างรหัสยืม').item.json.borrowId }}\" }",
+        "options": {
+          "responseHeaders": {
+            "entries": [
+              { "name": "Access-Control-Allow-Origin", "value": "*" }
+            ]
+          }
+        }
+      },
+      "id": "respond-success",
+      "name": "Respond - สำเร็จ",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [2010, 200]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={ \"success\": false, \"message\": \"อุปกรณ์หมด ไม่สามารถยืมได้\" }",
+        "options": {
+          "responseCode": 400,
+          "responseHeaders": {
+            "entries": [
+              { "name": "Access-Control-Allow-Origin", "value": "*" }
+            ]
+          }
+        }
+      },
+      "id": "respond-fail",
+      "name": "Respond - อุปกรณ์หมด",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [1130, 420]
+    }
+  ],
+  "connections": {
+    "Webhook - Borrow": { "main": [[{ "node": "Edit Fields - รับข้อมูลยืม", "type": "main", "index": 0 }]] },
+    "Edit Fields - รับข้อมูลยืม": { "main": [[{ "node": "Read Equipment Sheet", "type": "main", "index": 0 }]] },
+    "Read Equipment Sheet": { "main": [[{ "node": "IF - ตรวจสอบสต็อก", "type": "main", "index": 0 }]] },
+    "IF - ตรวจสอบสต็อก": {
+      "main": [
+        [{ "node": "สร้างรหัสยืม", "type": "main", "index": 0 }],
+        [{ "node": "Respond - อุปกรณ์หมด", "type": "main", "index": 0 }]
+      ]
+    },
+    "สร้างรหัสยืม": { "main": [[{ "node": "Append to รายการยืม", "type": "main", "index": 0 }]] },
+    "Append to รายการยืม": { "main": [[{ "node": "Update Equipment - ลดจำนวน", "type": "main", "index": 0 }]] },
+    "Update Equipment - ลดจำนวน": { "main": [[{ "node": "Send Email - ยืนยันยืม", "type": "main", "index": 0 }]] },
+    "Send Email - ยืนยันยืม": { "main": [[{ "node": "Respond - สำเร็จ", "type": "main", "index": 0 }]] }
+  },
+  "settings": { "executionOrder": "v1" },
+  "staticData": null,
+  "tags": [{ "name": "Equipment Lending" }],
+  "triggerCount": 0,
+  "updatedAt": "2026-04-07T00:00:00.000Z",
+  "versionId": "1"
+}
