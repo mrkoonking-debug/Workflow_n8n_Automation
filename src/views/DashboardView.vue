@@ -48,13 +48,13 @@ const categoryData = computed(() => {
     datasets: [{
       data: Object.values(cats),
       backgroundColor: [
-        'rgba(99, 102, 241, 0.8)',
-        'rgba(16, 185, 129, 0.8)',
-        'rgba(244, 63, 94, 0.8)',
-        'rgba(245, 158, 11, 0.8)',
-        'rgba(6, 182, 212, 0.8)',
-        'rgba(139, 92, 246, 0.8)',
-        'rgba(236, 72, 153, 0.8)',
+        'rgba(0, 122, 255, 0.75)',
+        'rgba(48, 209, 88, 0.75)',
+        'rgba(255, 59, 48, 0.75)',
+        'rgba(255, 149, 0, 0.75)',
+        'rgba(90, 200, 250, 0.75)',
+        'rgba(175, 82, 222, 0.75)',
+        'rgba(255, 45, 85, 0.75)',
       ],
       borderColor: 'transparent',
       borderWidth: 0,
@@ -71,7 +71,7 @@ const doughnutOptions = {
     legend: {
       position: 'bottom',
       labels: {
-        color: '#94a3b8',
+        color: '#6e6e73',
         font: { family: 'Inter', size: 12 },
         padding: 16,
         usePointStyle: true,
@@ -79,9 +79,11 @@ const doughnutOptions = {
       }
     },
     tooltip: {
-      backgroundColor: 'rgba(15,15,25,0.95)',
-      titleColor: '#f1f5f9',
-      bodyColor: '#94a3b8',
+      backgroundColor: 'rgba(255,255,255,0.96)',
+      titleColor: '#1d1d1f',
+      bodyColor: '#6e6e73',
+      borderColor: 'rgba(0,0,0,0.08)',
+      borderWidth: 1,
       padding: 12,
       cornerRadius: 8,
       titleFont: { family: 'Inter', weight: '600' },
@@ -105,8 +107,8 @@ const topBorrowedData = computed(() => {
     datasets: [{
       label: 'จำนวนครั้งที่ถูกยืม',
       data: sorted.map(([, count]) => count),
-      backgroundColor: 'rgba(99, 102, 241, 0.6)',
-      borderColor: 'rgba(99, 102, 241, 1)',
+      backgroundColor: 'rgba(0, 122, 255, 0.6)',
+      borderColor: 'rgba(0, 122, 255, 1)',
       borderWidth: 1,
       borderRadius: 6,
       barThickness: 28,
@@ -120,20 +122,22 @@ const barOptions = {
   indexAxis: 'y',
   scales: {
     x: {
-      grid: { color: 'rgba(255,255,255,0.04)' },
-      ticks: { color: '#64748b', font: { family: 'Inter', size: 11 }, stepSize: 1 },
+      grid: { color: 'rgba(0,0,0,0.04)' },
+      ticks: { color: '#86868b', font: { family: 'Inter', size: 11 }, stepSize: 1 },
     },
     y: {
       grid: { display: false },
-      ticks: { color: '#94a3b8', font: { family: 'Inter', size: 11 } },
+      ticks: { color: '#6e6e73', font: { family: 'Inter', size: 11 } },
     },
   },
   plugins: {
     legend: { display: false },
     tooltip: {
-      backgroundColor: 'rgba(15,15,25,0.95)',
-      titleColor: '#f1f5f9',
-      bodyColor: '#94a3b8',
+      backgroundColor: 'rgba(255,255,255,0.96)',
+      titleColor: '#1d1d1f',
+      bodyColor: '#6e6e73',
+      borderColor: 'rgba(0,0,0,0.08)',
+      borderWidth: 1,
       padding: 12,
       cornerRadius: 8,
     }
@@ -253,7 +257,7 @@ function getEquipmentName(id) {
               </thead>
               <tbody>
                 <tr v-for="item in recentActivity" :key="item.รหัสยืม">
-                  <td style="font-weight: 600; color: var(--accent-primary-light);">{{ item.รหัสยืม }}</td>
+                  <td style="font-weight: 600; color: var(--accent-primary);">{{ item.รหัสยืม }}</td>
                   <td>{{ item.ชื่อผู้ยืม }}</td>
                   <td>{{ getEquipmentName(item.อุปกรณ์) }}</td>
                   <td>{{ item.วันที่ยืม }}</td>

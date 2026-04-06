@@ -133,7 +133,7 @@ function reset() {
           <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
             <div>
               <div style="font-size: 12px; color: var(--text-tertiary); margin-bottom: 4px;">รหัสยืม</div>
-              <div style="font-weight: 700; font-size: 18px; color: var(--accent-primary-light);">{{ borrowRecord.รหัสยืม }}</div>
+              <div style="font-weight: 700; font-size: 18px; color: var(--accent-primary);">{{ borrowRecord.รหัสยืม }}</div>
             </div>
             <div>
               <div style="font-size: 12px; color: var(--text-tertiary); margin-bottom: 4px;">ผู้ยืม</div>
@@ -161,7 +161,7 @@ function reset() {
             </div>
             <div>
               <div style="font-size: 12px; color: var(--text-tertiary); margin-bottom: 4px;">กำหนดคืน</div>
-              <div :style="{ color: isOverdue ? 'var(--accent-rose-light)' : 'var(--text-primary)', fontWeight: isOverdue ? '700' : '400' }">
+              <div :style="{ color: isOverdue ? 'var(--accent-rose)' : 'var(--text-primary)', fontWeight: isOverdue ? '700' : '400' }">
                 {{ borrowRecord.กำหนดคืน }}
                 <span v-if="isOverdue" style="font-size: 12px;"> (เกิน {{ overdueDays }} วัน)</span>
               </div>
@@ -169,10 +169,10 @@ function reset() {
           </div>
 
           <!-- Overdue Warning -->
-          <div v-if="isOverdue" style="margin-top: 20px; padding: 14px 18px; background: rgba(244,63,94,0.08); border: 1px solid rgba(244,63,94,0.2); border-radius: 10px; display: flex; align-items: center; gap: 10px;">
+          <div v-if="isOverdue" style="margin-top: 20px; padding: 14px 18px; background: rgba(255,59,48,0.06); border: 1px solid rgba(255,59,48,0.15); border-radius: 10px; display: flex; align-items: center; gap: 10px;">
             <span style="font-size: 20px;">⚠️</span>
             <div>
-              <div style="font-weight: 600; color: var(--accent-rose-light); font-size: 14px;">อุปกรณ์เกินกำหนดคืน {{ overdueDays }} วัน</div>
+              <div style="font-weight: 600; color: var(--accent-rose); font-size: 14px;">อุปกรณ์เกินกำหนดคืน {{ overdueDays }} วัน</div>
               <div style="font-size: 12px; color: var(--text-tertiary);">กรุณาคืนอุปกรณ์โดยเร็ว</div>
             </div>
           </div>
@@ -191,8 +191,8 @@ function reset() {
           </div>
 
           <!-- Already Returned Info -->
-          <div v-if="borrowRecord.สถานะ === 'คืนแล้ว'" style="margin-top: 20px; padding: 14px 18px; background: rgba(99,102,241,0.08); border: 1px solid rgba(99,102,241,0.2); border-radius: 10px; text-align: center;">
-            <div style="font-weight: 600; color: var(--accent-primary-light);">อุปกรณ์นี้ถูกคืนแล้ว</div>
+          <div v-if="borrowRecord.สถานะ === 'คืนแล้ว'" style="margin-top: 20px; padding: 14px 18px; background: rgba(0,122,255,0.05); border: 1px solid rgba(0,122,255,0.12); border-radius: 10px; text-align: center;">
+            <div style="font-weight: 600; color: var(--accent-primary);">อุปกรณ์นี้ถูกคืนแล้ว</div>
             <div style="font-size: 13px; color: var(--text-tertiary); margin-top: 4px;">คืนเมื่อ {{ borrowRecord.วันที่คืน }}</div>
           </div>
         </div>
@@ -208,7 +208,7 @@ function reset() {
     <div v-if="showResult" class="modal-overlay" @click.self="showResult = false">
       <div class="modal-content" style="text-align: center;">
         <div style="font-size: 56px; margin-bottom: 16px;">{{ resultSuccess ? '✅' : '❌' }}</div>
-        <h3 :style="{ color: resultSuccess ? 'var(--accent-emerald-light)' : 'var(--accent-rose-light)' }">
+        <h3 :style="{ color: resultSuccess ? 'var(--accent-emerald-dark)' : 'var(--accent-rose)' }">
           {{ resultSuccess ? 'คืนอุปกรณ์สำเร็จ!' : 'ไม่สำเร็จ' }}
         </h3>
         <p style="margin-top: 8px;">{{ resultMessage }}</p>

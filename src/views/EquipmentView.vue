@@ -97,7 +97,7 @@ function getStockColor(item) {
             </thead>
             <tbody>
               <tr v-for="item in filteredEquipment" :key="item.รหัสอุปกรณ์">
-                <td style="font-weight: 600; color: var(--accent-primary-light);">{{ item.รหัสอุปกรณ์ }}</td>
+                <td style="font-weight: 600; color: var(--accent-primary);">{{ item.รหัสอุปกรณ์ }}</td>
                 <td style="font-weight: 500;">{{ item.ชื่ออุปกรณ์ }}</td>
                 <td>
                   <span style="padding: 4px 10px; border-radius: 6px; background: var(--bg-input); font-size: 12px; color: var(--text-secondary);">
@@ -105,7 +105,7 @@ function getStockColor(item) {
                   </span>
                 </td>
                 <td style="text-align: center;">{{ item.จำนวนทั้งหมด }}</td>
-                <td style="text-align: center; font-weight: 700;" :style="{ color: Number(item.จำนวนคงเหลือ) > 0 ? 'var(--accent-emerald-light)' : 'var(--accent-rose-light)' }">
+                <td style="text-align: center; font-weight: 700;" :style="{ color: Number(item.จำนวนคงเหลือ) > 0 ? 'var(--accent-emerald-dark)' : 'var(--accent-rose)' }">
                   {{ item.จำนวนคงเหลือ }}
                 </td>
                 <td>

@@ -236,7 +236,7 @@ function closeModal() {
                 </div>
                 <div>
                   <div style="font-size: 12px; color: var(--text-tertiary); margin-bottom: 4px;">รหัส</div>
-                  <div style="color: var(--accent-primary-light); font-weight: 600;">{{ selectedEquipmentInfo.รหัสอุปกรณ์ }}</div>
+                  <div style="color: var(--accent-primary); font-weight: 600;">{{ selectedEquipmentInfo.รหัสอุปกรณ์ }}</div>
                 </div>
               </div>
               <div>
@@ -266,19 +266,19 @@ function closeModal() {
           <div class="card-body">
             <ul style="list-style: none; display: flex; flex-direction: column; gap: 12px; font-size: 13px; color: var(--text-secondary);">
               <li style="display: flex; gap: 10px; align-items: flex-start;">
-                <span style="color: var(--accent-primary-light);">1.</span>
+                <span style="color: var(--accent-primary);">1.</span>
                 เลือกอุปกรณ์ที่ต้องการยืม
               </li>
               <li style="display: flex; gap: 10px; align-items: flex-start;">
-                <span style="color: var(--accent-primary-light);">2.</span>
+                <span style="color: var(--accent-primary);">2.</span>
                 กรอกข้อมูลผู้ยืมให้ครบถ้วน
               </li>
               <li style="display: flex; gap: 10px; align-items: flex-start;">
-                <span style="color: var(--accent-primary-light);">3.</span>
+                <span style="color: var(--accent-primary);">3.</span>
                 เลือกวันกำหนดคืน (สูงสุด 14 วัน)
               </li>
               <li style="display: flex; gap: 10px; align-items: flex-start;">
-                <span style="color: var(--accent-primary-light);">4.</span>
+                <span style="color: var(--accent-primary);">4.</span>
                 กดยืนยัน → จดรหัสยืมไว้ใช้คืน
               </li>
               <li style="display: flex; gap: 10px; align-items: flex-start;">
@@ -295,10 +295,10 @@ function closeModal() {
     <div v-if="showSuccess" class="modal-overlay" @click.self="closeModal">
       <div class="modal-content" style="text-align: center;">
         <div style="font-size: 56px; margin-bottom: 16px;">✅</div>
-        <h3 style="color: var(--accent-emerald-light);">ยืมอุปกรณ์สำเร็จ!</h3>
+        <h3 style="color: var(--accent-emerald-dark);">ยืมอุปกรณ์สำเร็จ!</h3>
         <p style="margin-top: 8px;">รหัสยืมของคุณคือ</p>
-        <div style="margin: 20px 0; padding: 16px; background: rgba(99,102,241,0.1); border-radius: 12px; border: 1px solid rgba(99,102,241,0.2);">
-          <div style="font-size: 28px; font-weight: 800; color: var(--accent-primary-light); letter-spacing: 0.05em;">
+        <div style="margin: 20px 0; padding: 16px; background: rgba(0,122,255,0.06); border-radius: 12px; border: 1px solid rgba(0,122,255,0.12);">
+          <div style="font-size: 28px; font-weight: 800; color: var(--accent-primary); letter-spacing: 0.05em;">
             {{ resultBorrowId }}
           </div>
         </div>

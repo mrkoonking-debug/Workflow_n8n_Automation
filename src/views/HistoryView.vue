@@ -147,7 +147,7 @@ function goToPage(page) {
             </thead>
             <tbody>
               <tr v-for="record in paginatedHistory" :key="record.รหัสยืม">
-                <td style="font-weight: 600; color: var(--accent-primary-light);">{{ record.รหัสยืม }}</td>
+                <td style="font-weight: 600; color: var(--accent-primary);">{{ record.รหัสยืม }}</td>
                 <td>{{ record['รหัสนศ.'] }}</td>
                 <td style="font-weight: 500;">{{ record.ชื่อผู้ยืม }}</td>
                 <td>{{ getEquipmentName(record.อุปกรณ์) }}</td>
