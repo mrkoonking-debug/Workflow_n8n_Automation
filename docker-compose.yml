@@ -1,0 +1,29 @@
+version: '3.8'
+
+services:
+  # ============================================
+  # n8n — Workflow Automation Engine
+  # ดึงข้อมูลจาก Google Sheets + ส่ง Email
+  # ============================================
+  n8n:
+    image: docker.n8n.io/n8nio/n8n:latest
+    container_name: n8n-equipment
+    restart: unless-stopped
+    ports:
+      - "5678:5678"
+    environment:
+      - N8N_HOST=localhost
+      - N8N_PORT=5678
+      - N8N_PROTOCOL=http
+      - WEBHOOK_URL=http://localhost:5678/
+      # อนุญาต CORS สำหรับ Vue.js frontend
+      - N8N_EDITOR_BASE_URL=http://localhost:5678/
+      # ตั้งค่า Timezone
+      - GENERIC_TIMEZONE=Asia/Bangkok
+      - TZ=Asia/Bangkok
+    volumes:
+      - n8n_data:/home/node/.n8n
+
+volumes:
+  n8n_data:
+    driver: local

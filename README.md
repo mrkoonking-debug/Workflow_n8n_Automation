@@ -10,8 +10,8 @@
 
 ```
 ┌─────────────────┐     Webhook      ┌─────────────┐     Read/Write     ┌──────────────┐
-│   🖥️ Vue.js 3   │ ──────────────→ │  ⚙️ n8n      │ ────────────────→ │ 📊 Google     │
-│   (Vite)        │ ←────────────── │  Workflow    │ ←──────────────── │    Sheets     │
+│   🖥️ Vue.js 3   │ ─────────────→ │  ⚙️ n8n      │ ────────────────→ │ 📊 Google     │
+│   (Vite)        │ ←──────────── │  (Docker)    │ ←──────────────── │    Sheets     │
 │   Port: 5173    │     Response    │  Port: 5678  │                   │  (3 Sheets)   │
 └─────────────────┘                 └─────────────┘                   └──────────────┘
                                           │
@@ -80,7 +80,7 @@
 Workflow_n8n_Automation/
 ├── src/
 │   ├── assets/
-│   │   └── main.css               ← Design System (Premium Dark Theme)
+│   │   └── main.css               ← Design System (macOS Light Theme)
 │   ├── views/
 │   │   ├── DashboardView.vue       ← หน้า Dashboard
 │   │   ├── EquipmentView.vue       ← หน้ารายการอุปกรณ์
@@ -88,7 +88,7 @@ Workflow_n8n_Automation/
 │   │   ├── ReturnView.vue          ← หน้าคืนอุปกรณ์
 │   │   └── HistoryView.vue         ← หน้าประวัติยืม-คืน
 │   ├── services/
-│   │   └── api.js                  ← API Service + Mock Data
+│   │   └── api.js                  ← API Service (n8n Webhooks Only)
 │   ├── router/
 │   │   └── index.js                ← Vue Router (5 routes)
 │   ├── App.vue                     ← Layout + Sidebar Navigation
@@ -99,6 +99,7 @@ Workflow_n8n_Automation/
 │   ├── 3-get-equipment.json        ← Workflow: ดึงข้อมูลอุปกรณ์
 │   ├── 4-get-borrow-history.json   ← Workflow: ดึงประวัติ
 │   └── 5-overdue-alert.json        ← Workflow: แจ้งเตือนเกินกำหนด
+├── docker-compose.yml             ← Docker: n8n Container
 ├── index.html
 ├── package.json
 ├── vite.config.js
@@ -110,8 +111,8 @@ Workflow_n8n_Automation/
 ## 🚀 วิธีติดตั้งและรัน
 
 ### Prerequisites
-- Node.js 20+ 
-- n8n (Docker หรือ Desktop)
+- Node.js 20+
+- **Docker & Docker Compose** (for n8n)
 - Google Sheets + OAuth2 Credentials
 
 ### 1. Clone & Install
@@ -121,18 +122,30 @@ cd Workflow_n8n_Automation
 npm install
 ```
 
-### 2. Run Development Server
+### 2. เริ่ม n8n ด้วย Docker
+```bash
+docker compose up -d
+```
+เปิด browser ไปที่ `http://localhost:5678` เพื่อตั้งค่า n8n
+
+### 3. ตั้งค่า n8n Workflows
+1. เข้า n8n ที่ `http://localhost:5678`
+2. ไปที่ **Workflows** → **Import from File**
+3. Import ไฟล์ JSON ทั้ง 5 ไฟล์จากโฟลเดอร์ `n8n-JSON/`
+4. ตั้งค่า **Google Sheets** credentials (เชื่อมต่อ Google Sheets ที่มีข้อมูล)
+5. ตั้งค่า **Gmail** credentials (สำหรับส่ง Email ยืนยัน)
+6. **Activate** ทุก workflow
+
+### 4. Run Vue.js Frontend
 ```bash
 npm run dev
 ```
 เปิด browser ไปที่ `http://localhost:5173`
 
-### 3. ตั้งค่า n8n
-1. รัน n8n (port 5678)
-2. Import workflow JSON 5 ไฟล์
-3. ตั้งค่า Google Sheets credentials
-4. ตั้งค่า Gmail credentials
-5. Activate ทุก workflow
+### 5. หยุด n8n
+```bash
+docker compose down
+```
 
 ---
 
@@ -145,8 +158,9 @@ npm run dev
 | Vue Router 4 | Client-side Routing |
 | Chart.js + vue-chartjs | Dashboard Charts |
 | Axios | HTTP Client |
-| n8n | Workflow Automation |
-| Google Sheets API | Database |
+| **Docker** | **Container Runtime (n8n)** |
+| **n8n** | **Workflow Automation (Docker)** |
+| **Google Sheets API** | **Database (ผ่าน n8n)** |
 | Gmail API | Email Notifications |
 
 ---

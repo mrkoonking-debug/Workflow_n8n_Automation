@@ -8,6 +8,7 @@ const submitting = ref(false)
 const showSuccess = ref(false)
 const resultBorrowId = ref('')
 const errors = ref({})
+const loadError = ref('')
 
 const form = ref({
   equipmentId: '',
@@ -19,8 +20,13 @@ const form = ref({
 })
 
 onMounted(async () => {
-  equipment.value = await api.getEquipment()
-  loading.value = false
+  try {
+    equipment.value = await api.getEquipment()
+  } catch (error) {
+    loadError.value = error.message
+  } finally {
+    loading.value = false
+  }
   // Set min return date to tomorrow
   const tomorrow = new Date()
   tomorrow.setDate(tomorrow.getDate() + 1)
@@ -66,7 +72,7 @@ async function handleSubmit() {
       errors.value.submit = result.message
     }
   } catch (err) {
-    errors.value.submit = 'เกิดข้อผิดพลาด กรุณาลองใหม่'
+    errors.value.submit = err.message || 'เกิดข้อผิดพลาด กรุณาตรวจสอบการเชื่อมต่อ n8n'
   }
   submitting.value = false
 }
@@ -86,7 +92,16 @@ function closeModal() {
 
     <div v-if="loading" class="loading-overlay">
       <div class="spinner"></div>
-      <span>กำลังโหลดข้อมูล...</span>
+      <span>กำลังโหลดข้อมูลจาก n8n + Google Sheets...</span>
+    </div>
+
+    <div v-else-if="loadError" class="card slide-up" style="text-align: center;">
+      <div class="card-body" style="padding: 40px;">
+        <div style="font-size: 48px; margin-bottom: 12px;">⚠️</div>
+        <h3 style="color: var(--accent-rose); margin-bottom: 8px;">ไม่สามารถโหลดข้อมูลอุปกรณ์ได้</h3>
+        <p style="color: var(--text-secondary); font-size: 13px;">{{ loadError }}</p>
+        <button class="btn btn-primary" style="margin-top: 16px;" @click="location.reload()">🔄 ลองใหม่</button>
+      </div>
     </div>
 
     <div v-else class="grid-2">

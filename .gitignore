@@ -1,20 +1,14 @@
-# Logs
-logs
-*.log
-npm-debug.log*
-yarn-debug.log*
-yarn-error.log*
-pnpm-debug.log*
-lerna-debug.log*
+# Dependencies
+node_modules/
+.pnp
+.pnp.js
 
-node_modules
-.DS_Store
-dist
-dist-ssr
-coverage
+# Build
+dist/
+dist-ssr/
 *.local
 
-# Editor directories and files
+# Editor
 .vscode/*
 !.vscode/extensions.json
 .idea
@@ -24,16 +18,21 @@ coverage
 *.sln
 *.sw?
 
-*.tsbuildinfo
+# OS
+.DS_Store
+Thumbs.db
 
-.eslintcache
+# Env
+.env
+.env.local
+.env.*.local
 
-# Cypress
-/cypress/videos/
-/cypress/screenshots/
+# n8n data (local Docker volume)
+n8n_data/
 
-# Vitest
-__screenshots__/
-
-# Vite
-*.timestamp-*-*.mjs
+# Logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*

@@ -65,7 +65,7 @@ async function handleReturn() {
     }
   } catch (err) {
     resultSuccess.value = false
-    resultMessage.value = 'เกิดข้อผิดพลาด กรุณาลองใหม่'
+    resultMessage.value = err.message || 'ไม่สามารถเชื่อมต่อ n8n ได้ กรุณาตรวจสอบ'
     showResult.value = true
   }
   returning.value = false

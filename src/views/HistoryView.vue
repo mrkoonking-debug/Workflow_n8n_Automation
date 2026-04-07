@@ -5,17 +5,23 @@ import api from '../services/api.js'
 const borrowHistory = ref([])
 const equipment = ref([])
 const loading = ref(true)
+const errorMessage = ref('')
 const searchQuery = ref('')
 const selectedStatus = ref('ทั้งหมด')
 
 onMounted(async () => {
-  const [history, eq] = await Promise.all([
-    api.getBorrowHistory(),
-    api.getEquipment(),
-  ])
-  borrowHistory.value = history
-  equipment.value = eq
-  loading.value = false
+  try {
+    const [history, eq] = await Promise.all([
+      api.getBorrowHistory(),
+      api.getEquipment(),
+    ])
+    borrowHistory.value = history
+    equipment.value = eq
+  } catch (error) {
+    errorMessage.value = error.message
+  } finally {
+    loading.value = false
+  }
 })
 
 const statusTabs = ['ทั้งหมด', 'ยืมอยู่', 'คืนแล้ว', 'เกินกำหนด']
@@ -125,7 +131,17 @@ function goToPage(page) {
     <!-- Loading -->
     <div v-if="loading" class="loading-overlay">
       <div class="spinner"></div>
-      <span>กำลังโหลดข้อมูล...</span>
+      <span>กำลังโหลดข้อมูลจาก n8n + Google Sheets...</span>
+    </div>
+
+    <!-- Error -->
+    <div v-else-if="errorMessage" class="card slide-up" style="text-align: center;">
+      <div class="card-body" style="padding: 40px;">
+        <div style="font-size: 48px; margin-bottom: 12px;">⚠️</div>
+        <h3 style="color: var(--accent-rose); margin-bottom: 8px;">ไม่สามารถโหลดประวัติยืม-คืนได้</h3>
+        <p style="color: var(--text-secondary); font-size: 13px;">{{ errorMessage }}</p>
+        <button class="btn btn-primary" style="margin-top: 16px;" @click="location.reload()">🔄 ลองใหม่</button>
+      </div>
     </div>
 
     <!-- History Table -->

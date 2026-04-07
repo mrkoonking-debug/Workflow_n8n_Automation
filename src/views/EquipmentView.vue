@@ -4,12 +4,18 @@ import api from '../services/api.js'
 
 const equipment = ref([])
 const loading = ref(true)
+const errorMessage = ref('')
 const searchQuery = ref('')
 const selectedCategory = ref('ทั้งหมด')
 
 onMounted(async () => {
-  equipment.value = await api.getEquipment()
-  loading.value = false
+  try {
+    equipment.value = await api.getEquipment()
+  } catch (error) {
+    errorMessage.value = error.message
+  } finally {
+    loading.value = false
+  }
 })
 
 const categories = computed(() => {
@@ -76,7 +82,17 @@ function getStockColor(item) {
     <!-- Loading -->
     <div v-if="loading" class="loading-overlay">
       <div class="spinner"></div>
-      <span>กำลังโหลดข้อมูล...</span>
+      <span>กำลังโหลดข้อมูลจาก n8n + Google Sheets...</span>
+    </div>
+
+    <!-- Error -->
+    <div v-else-if="errorMessage" class="card slide-up" style="text-align: center;">
+      <div class="card-body" style="padding: 40px;">
+        <div style="font-size: 48px; margin-bottom: 12px;">⚠️</div>
+        <h3 style="color: var(--accent-rose); margin-bottom: 8px;">ไม่สามารถโหลดข้อมูลอุปกรณ์ได้</h3>
+        <p style="color: var(--text-secondary); font-size: 13px;">{{ errorMessage }}</p>
+        <button class="btn btn-primary" style="margin-top: 16px;" @click="location.reload()">🔄 ลองใหม่</button>
+      </div>
     </div>
 
     <!-- Equipment Table -->
