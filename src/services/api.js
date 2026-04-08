@@ -111,6 +111,27 @@ const api = {
   },
 
   /**
+   * ดึงข้อมูลนักศึกษาทั้งหมดจาก Google Sheets ผ่าน n8n
+   * Workflow: GET /webhook/students → Read Google Sheets "ผู้ใช้" → Respond
+   */
+  async getStudents() {
+    try {
+      const response = await withRetry(() => n8nClient.get('/students'))
+      connectionState.connected = true
+      connectionState.error = null
+
+      const data = Array.isArray(response.data) ? response.data : response.data.data || []
+      console.log('✅ ดึงข้อมูลนักศึกษาจาก n8n + Google Sheets สำเร็จ:', data.length, 'คน')
+      return data
+    } catch (error) {
+      connectionState.connected = false
+      connectionState.error = error.message
+      console.error('❌ ไม่สามารถดึงข้อมูลนักศึกษาจาก n8n ได้:', error.message)
+      throw new Error('ไม่สามารถดึงข้อมูลนักศึกษาได้ — กรุณาตรวจสอบว่า n8n Workflow "Get Students" ถูกเปิดใช้งาน')
+    }
+  },
+
+  /**
    * ยืมอุปกรณ์ — ส่งข้อมูลไป n8n → เขียน Google Sheets + อัปเดตสต็อก + ส่ง Email
    * Workflow: POST /webhook/borrow → ตรวจสต็อก → เขียนรายการยืม → ลดจำนวน → ส่ง Email → Respond
    */
@@ -157,6 +178,15 @@ const api = {
       connectionState.connected = true
       connectionState.error = null
       console.log('✅ คืนอุปกรณ์ผ่าน n8n + Google Sheets สำเร็จ:', response.data)
+
+      // ถ้า n8n ตอบ 200 OK ให้ถือว่าสำเร็จเลย (เหมือน borrowEquipment)
+      if (response.status === 200) {
+        return {
+          success: true,
+          message: response.data?.message || 'คืนหนังสือสำเร็จ!'
+        }
+      }
+
       return response.data
     } catch (error) {
       // แยก connection error vs logic error

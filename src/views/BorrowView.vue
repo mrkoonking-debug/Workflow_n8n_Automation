@@ -16,6 +16,18 @@ const bookCodeInput = ref('')
 const bookLookupDone = ref(false)
 const bookNotFound = ref(false)
 const foundBook = ref(null)
+const bookSuggestions = ref([])
+const showBookSuggestions = ref(false)
+const bookLocked = ref(false)
+
+// === Student Lookup ===
+const students = ref([])
+const studentSuggestions = ref([])
+const showSuggestions = ref(false)
+const foundStudent = ref(null)
+const studentLocked = ref(false)
+const studentSearching = ref(false)
+const studentNotFound = ref(false)
 
 // === Form Data ===
 const form = ref({
@@ -32,7 +44,21 @@ const maxReturnDate = ref('')
 
 onMounted(async () => {
   try {
-    equipment.value = await api.getEquipment()
+    const [equipmentData, studentData] = await Promise.allSettled([
+      api.getEquipment(),
+      api.getStudents(),
+    ])
+    if (equipmentData.status === 'fulfilled') {
+      equipment.value = equipmentData.value
+    } else {
+      loadError.value = equipmentData.reason?.message || 'ไม่สามารถโหลดข้อมูลหนังสือได้'
+    }
+    if (studentData.status === 'fulfilled') {
+      students.value = studentData.value
+      console.log('✅ โหลดข้อมูลนักศึกษา:', studentData.value.length, 'คน')
+    } else {
+      console.warn('⚠️ ไม่สามารถโหลดข้อมูลนักศึกษาได้ — ผู้ใช้ต้องกรอกเอง')
+    }
   } catch (error) {
     loadError.value = error.message
   } finally {
@@ -52,28 +78,111 @@ onMounted(async () => {
   maxReturnDate.value = maxDate.toISOString().split('T')[0]
 })
 
-// === Book Lookup Function ===
-function lookupBook() {
-  const code = bookCodeInput.value.trim().toUpperCase()
-  if (!code) {
-    errors.value.bookCode = 'กรุณากรอกรหัสหนังสือ'
-    return
-  }
-  errors.value.bookCode = ''
-  bookNotFound.value = false
+// === Student Auto-Lookup ===
+watch(() => form.value.studentId, (val) => {
+  if (studentLocked.value) return
+  const id = val.trim()
+  studentNotFound.value = false
+  foundStudent.value = null
 
-  const found = equipment.value.find(e => e.รหัสอุปกรณ์.toUpperCase() === code)
-  if (found) {
-    foundBook.value = found
-    form.value.equipmentId = found.รหัสอุปกรณ์
-    bookLookupDone.value = true
-    bookNotFound.value = false
+  if (id.length >= 3 && students.value.length > 0) {
+    // Filter suggestions that start with the typed value
+    const key = 'รหัสนศ.' in students.value[0] ? 'รหัสนศ.' : 'รหัสนักศึกษา'
+    studentSuggestions.value = students.value.filter(s => {
+      const sid = String(s[key] || '')
+      return sid.startsWith(id)
+    }).slice(0, 8)
+    showSuggestions.value = studentSuggestions.value.length > 0
+
+    // Exact match — auto-fill
+    if (id.length >= 8) {
+      const exact = students.value.find(s => String(s[key] || '') === id)
+      if (exact) {
+        selectStudent(exact)
+      } else {
+        showSuggestions.value = false
+        studentNotFound.value = true
+      }
+    }
   } else {
-    foundBook.value = null
-    form.value.equipmentId = ''
-    bookLookupDone.value = true
-    bookNotFound.value = true
+    studentSuggestions.value = []
+    showSuggestions.value = false
   }
+})
+
+function selectStudent(student) {
+  const key = 'รหัสนศ.' in student ? 'รหัสนศ.' : 'รหัสนักศึกษา'
+  const nameKey = 'ชื่อ-นามสกุล' in student ? 'ชื่อ-นามสกุล' : 'ชื่อนามสกุล'
+  foundStudent.value = student
+  form.value.studentId = String(student[key] || '')
+  form.value.name = student[nameKey] || student['ชื่อ'] || ''
+  form.value.email = student['Email'] || student['email'] || ''
+  form.value.faculty = student['คณะ'] || ''
+  studentLocked.value = true
+  showSuggestions.value = false
+  studentNotFound.value = false
+  errors.value.studentId = ''
+  errors.value.name = ''
+  errors.value.email = ''
+  errors.value.faculty = ''
+}
+
+function clearStudentLookup() {
+  foundStudent.value = null
+  studentLocked.value = false
+  studentNotFound.value = false
+  form.value.studentId = ''
+  form.value.name = ''
+  form.value.email = ''
+  form.value.faculty = ''
+  showSuggestions.value = false
+}
+
+function getStudentField(student, field) {
+  if (field === 'id') return student['รหัสนศ.'] || student['รหัสนักศึกษา'] || ''
+  if (field === 'name') return student['ชื่อ-นามสกุล'] || student['ชื่อนามสกุล'] || student['ชื่อ'] || ''
+  if (field === 'email') return student['Email'] || student['email'] || ''
+  if (field === 'faculty') return student['คณะ'] || ''
+  return ''
+}
+
+// === Book Auto-Lookup ===
+watch(() => bookCodeInput.value, (val) => {
+  if (bookLocked.value) return
+  const code = val.trim().toUpperCase()
+  bookNotFound.value = false
+  foundBook.value = null
+  form.value.equipmentId = ''
+  bookLookupDone.value = false
+
+  if (code.length >= 1 && equipment.value.length > 0) {
+    bookSuggestions.value = equipment.value.filter(e => {
+      const eid = (e.รหัสอุปกรณ์ || '').toUpperCase()
+      const ename = (e.ชื่ออุปกรณ์ || '').toLowerCase()
+      return eid.includes(code) || ename.includes(code.toLowerCase())
+    }).slice(0, 10)
+    showBookSuggestions.value = bookSuggestions.value.length > 0
+
+    // Exact match on code
+    const exact = equipment.value.find(e => (e.รหัสอุปกรณ์ || '').toUpperCase() === code)
+    if (exact) {
+      selectBook(exact)
+    }
+  } else {
+    bookSuggestions.value = []
+    showBookSuggestions.value = false
+  }
+})
+
+function selectBook(book) {
+  foundBook.value = book
+  form.value.equipmentId = book.รหัสอุปกรณ์
+  bookCodeInput.value = book.รหัสอุปกรณ์
+  bookLookupDone.value = true
+  bookNotFound.value = false
+  bookLocked.value = true
+  showBookSuggestions.value = false
+  errors.value.bookCode = ''
 }
 
 function clearBookLookup() {
@@ -82,6 +191,8 @@ function clearBookLookup() {
   form.value.equipmentId = ''
   bookLookupDone.value = false
   bookNotFound.value = false
+  bookLocked.value = false
+  showBookSuggestions.value = false
   errors.value.bookCode = ''
 }
 
@@ -136,6 +247,7 @@ async function handleSubmit() {
       equipment.value = await api.getEquipment()
       form.value = { equipmentId: '', studentId: '', name: '', email: '', faculty: '', returnDate: '' }
       clearBookLookup()
+      clearStudentLookup()
       // Re-set default return date
       const defaultReturn = new Date()
       defaultReturn.setDate(defaultReturn.getDate() + 7)
@@ -189,43 +301,73 @@ function closeModal() {
             <!-- ===== STEP 1: Book Lookup ===== -->
             <div style="margin-bottom: 8px; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: var(--accent-primary);">
               ขั้นตอนที่ 1 — ระบุหนังสือ
+              <span style="font-weight: 500; color: var(--text-tertiary); text-transform: none; letter-spacing: 0;">
+                (พิมพ์รหัสหรือชื่อเพื่อค้นหาอัตโนมัติ)
+              </span>
             </div>
-            <div class="form-group">
+            <div class="form-group" style="position: relative;">
               <label class="form-label" for="book-code">รหัสหนังสือ *</label>
               <div style="display: flex; gap: 8px;">
                 <input
                   v-model="bookCodeInput"
                   class="form-input"
-                  :class="{ error: errors.bookCode }"
-                  placeholder="พิมพ์รหัส เช่น BK003"
+                  :class="{ error: errors.bookCode, 'input-locked': bookLocked }"
+                  placeholder="พิมพ์รหัส เช่น BK หรือ ชื่อหนังสือ"
                   id="book-code"
                   style="flex: 1; text-transform: uppercase; font-weight: 600; letter-spacing: 0.05em;"
-                  :disabled="submitting"
-                  @keyup.enter="lookupBook"
+                  :disabled="submitting || bookLocked"
+                  autocomplete="off"
+                  @focus="bookCodeInput.length >= 1 && bookSuggestions.length > 0 && !bookLocked ? showBookSuggestions = true : null"
+                  @blur="setTimeout(() => showBookSuggestions = false, 200)"
                 />
                 <button
+                  v-if="bookLocked"
                   type="button"
-                  class="btn btn-primary"
-                  @click="lookupBook"
-                  :disabled="submitting || !bookCodeInput.trim()"
-                  style="height: 46px; padding: 0 20px; white-space: nowrap;"
+                  @click="clearBookLookup"
+                  style="height: 46px; padding: 0 16px; background: none; border: 1.5px solid rgba(255,59,48,0.2); border-radius: 10px; cursor: pointer; font-size: 14px; color: var(--accent-rose); transition: all 150ms ease;"
+                  title="ล้างหนังสือที่เลือก"
                 >
-                  🔍 ค้นหา
+                  ✕ ล้าง
                 </button>
               </div>
               <div v-if="errors.bookCode" class="form-error">{{ errors.bookCode }}</div>
 
+              <!-- Book Suggestions Dropdown -->
+              <div
+                v-if="showBookSuggestions && bookSuggestions.length > 0"
+                class="student-suggestions-dropdown"
+              >
+                <div class="suggestions-header">
+                  📚 ผลค้นหาหนังสือ ({{ bookSuggestions.length }} เล่ม)
+                </div>
+                <div
+                  v-for="eq in bookSuggestions"
+                  :key="eq.รหัสอุปกรณ์"
+                  class="suggestion-item"
+                  @mousedown.prevent="selectBook(eq)"
+                >
+                  <code class="suggestion-id">{{ eq.รหัสอุปกรณ์ }}</code>
+                  <span class="suggestion-name">{{ eq.ชื่ออุปกรณ์ }}</span>
+                  <span class="suggestion-faculty"
+                    :style="{ color: Number(eq.จำนวนคงเหลือ) > 0 ? '#248a3d' : '#ff3b30', background: Number(eq.จำนวนคงเหลือ) > 0 ? '#e8f8ee' : '#fff0ef' }"
+                  >
+                    คงเหลือ {{ eq.จำนวนคงเหลือ }}/{{ eq.จำนวนทั้งหมด }}
+                  </span>
+                </div>
+              </div>
+
               <!-- Book Found -->
-              <div v-if="foundBook" style="margin-top: 12px; padding: 16px; border-radius: 12px; border: 1.5px solid; transition: all 200ms ease;"
+              <div v-if="foundBook" style="margin-top: 12px; padding: 16px; border-radius: 12px; border: 1.5px solid; transition: all 200ms ease; animation: fadeSlideUp 0.3s ease;"
                 :style="{
-                  background: bookHasStock ? 'rgba(52, 199, 89, 0.04)' : 'rgba(255, 59, 48, 0.04)',
-                  borderColor: bookHasStock ? 'rgba(52, 199, 89, 0.2)' : 'rgba(255, 59, 48, 0.2)'
+                  background: bookHasStock ? 'rgba(52, 199, 89, 0.06)' : 'rgba(255, 59, 48, 0.06)',
+                  borderColor: bookHasStock ? 'rgba(52, 199, 89, 0.25)' : 'rgba(255, 59, 48, 0.25)'
                 }"
               >
-                <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px;">
-                  <div style="font-weight: 700; font-size: 15px;">{{ foundBook.ชื่ออุปกรณ์ }}</div>
-                  <button type="button" @click="clearBookLookup" style="background: none; border: none; cursor: pointer; font-size: 16px; opacity: 0.5; padding: 4px;" title="ล้าง">✕</button>
+                <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 8px;">
+                  <span style="font-size: 16px;">✅</span>
+                  <span style="font-weight: 700; font-size: 14px; color: var(--accent-emerald-dark);">พบหนังสือในระบบ</span>
                 </div>
+                <div style="font-weight: 700; font-size: 15px; margin-bottom: 6px;">{{ foundBook.ชื่ออุปกรณ์ }}</div>
                 <div style="display: flex; gap: 16px; font-size: 13px; color: var(--text-secondary);">
                   <span>📂 {{ foundBook.หมวดหมู่ }}</span>
                   <span>🏷️ {{ foundBook.รหัสอุปกรณ์ }}</span>
@@ -248,76 +390,135 @@ function closeModal() {
                   ❌ หนังสือเล่มนี้ถูกยืมหมดแล้ว
                 </div>
               </div>
-
-              <!-- Book Not Found -->
-              <div v-if="bookNotFound && bookLookupDone" style="margin-top: 12px; padding: 14px; border-radius: 12px; background: rgba(255, 59, 48, 0.04); border: 1px solid rgba(255, 59, 48, 0.15); font-size: 13px; display: flex; align-items: center; gap: 8px;">
-                <span style="font-size: 18px;">❌</span>
-                <div>
-                  <div style="font-weight: 600; color: var(--accent-rose);">ไม่พบรหัส "{{ bookCodeInput.toUpperCase() }}" ในระบบ</div>
-                  <div style="color: var(--text-tertiary); margin-top: 2px;">ตรวจสอบรหัสให้ถูกต้อง (เช่น BK001 - BK010)</div>
-                </div>
-              </div>
             </div>
 
             <!-- ===== STEP 2: Student Info ===== -->
             <div style="margin-top: 24px; margin-bottom: 8px; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: var(--accent-primary);">
               ขั้นตอนที่ 2 — ข้อมูลผู้ยืม
+              <span v-if="students.length > 0" style="font-weight: 500; color: var(--text-tertiary); text-transform: none; letter-spacing: 0;">
+                (พิมพ์รหัสนศ. เพื่อค้นหาอัตโนมัติ)
+              </span>
             </div>
 
-            <!-- Student ID -->
-            <div class="form-group">
+            <!-- Student ID with Auto-Lookup -->
+            <div class="form-group" style="position: relative;">
               <label class="form-label" for="student-id">รหัสนักศึกษา *</label>
-              <input
-                v-model="form.studentId"
-                class="form-input"
-                :class="{ error: errors.studentId }"
-                placeholder="เช่น 67704800"
-                maxlength="8"
-                id="student-id"
-                :disabled="submitting"
-                style="font-weight: 600; letter-spacing: 0.08em;"
-              />
+              <div style="display: flex; gap: 8px;">
+                <input
+                  v-model="form.studentId"
+                  class="form-input"
+                  :class="{ error: errors.studentId, 'input-locked': studentLocked }"
+                  placeholder="เช่น 67010001"
+                  maxlength="8"
+                  id="student-id"
+                  :disabled="submitting || studentLocked"
+                  style="flex: 1; font-weight: 600; letter-spacing: 0.08em;"
+                  autocomplete="off"
+                  @focus="form.studentId.length >= 3 && studentSuggestions.length > 0 ? showSuggestions = true : null"
+                  @blur="setTimeout(() => showSuggestions = false, 200)"
+                />
+                <button
+                  v-if="studentLocked"
+                  type="button"
+                  @click="clearStudentLookup"
+                  style="height: 46px; padding: 0 16px; background: none; border: 1.5px solid rgba(255,59,48,0.2); border-radius: 10px; cursor: pointer; font-size: 14px; color: var(--accent-rose); transition: all 150ms ease;"
+                  title="ล้างข้อมูลนักศึกษา"
+                >
+                  ✕ ล้าง
+                </button>
+              </div>
               <div v-if="errors.studentId" class="form-error">{{ errors.studentId }}</div>
+
+              <!-- Suggestions Dropdown -->
+              <div
+                v-if="showSuggestions && studentSuggestions.length > 0"
+                class="student-suggestions-dropdown"
+              >
+                <div class="suggestions-header">
+                  🔍 ผลค้นหานักศึกษา ({{ studentSuggestions.length }} คน)
+                </div>
+                <div
+                  v-for="s in studentSuggestions"
+                  :key="getStudentField(s, 'id')"
+                  class="suggestion-item"
+                  @mousedown.prevent="selectStudent(s)"
+                >
+                  <code class="suggestion-id">{{ getStudentField(s, 'id') }}</code>
+                  <span class="suggestion-name">{{ getStudentField(s, 'name') }}</span>
+                  <span class="suggestion-faculty">{{ getStudentField(s, 'faculty') }}</span>
+                </div>
+              </div>
+
+              <!-- Student Not Found -->
+              <div v-if="studentNotFound && form.studentId.length >= 8" style="margin-top: 8px; padding: 10px 14px; border-radius: 10px; background: rgba(255, 159, 10, 0.05); border: 1px solid rgba(255, 159, 10, 0.15); font-size: 12px; display: flex; align-items: center; gap: 8px;">
+                <span style="font-size: 16px;">⚠️</span>
+                <div>
+                  <div style="font-weight: 600; color: #c27800;">ไม่พบรหัส "{{ form.studentId }}" ในระบบนักศึกษา</div>
+                  <div style="color: var(--text-tertiary); margin-top: 2px;">คุณสามารถกรอกข้อมูลด้านล่างเองได้</div>
+                </div>
+              </div>
+
+              <!-- Student Found Confirmation -->
+              <div v-if="foundStudent" style="margin-top: 8px; padding: 12px 16px; border-radius: 12px; background: rgba(52, 199, 89, 0.04); border: 1.5px solid rgba(52, 199, 89, 0.2); animation: fadeSlideUp 0.3s ease;">
+                <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 6px;">
+                  <span style="font-size: 16px;">✅</span>
+                  <span style="font-weight: 700; font-size: 14px; color: var(--accent-emerald-dark);">พบข้อมูลนักศึกษา</span>
+                </div>
+                <div style="display: flex; flex-wrap: wrap; gap: 12px; font-size: 12px; color: var(--text-secondary);">
+                  <span>👤 {{ getStudentField(foundStudent, 'name') }}</span>
+                  <span>📧 {{ getStudentField(foundStudent, 'email') }}</span>
+                  <span>🏛️ {{ getStudentField(foundStudent, 'faculty') }}</span>
+                </div>
+              </div>
             </div>
 
             <!-- Name -->
             <div class="form-group">
-              <label class="form-label" for="borrower-name">ชื่อ-นามสกุล *</label>
+              <label class="form-label" for="borrower-name">
+                ชื่อ-นามสกุล *
+                <span v-if="studentLocked" style="font-size: 10px; color: var(--accent-emerald-dark); font-weight: 500;">🔒 ดึงจากระบบ</span>
+              </label>
               <input
                 v-model="form.name"
                 class="form-input"
-                :class="{ error: errors.name }"
+                :class="{ error: errors.name, 'input-locked': studentLocked }"
                 placeholder="เช่น สมชาย ใจดี"
                 id="borrower-name"
-                :disabled="submitting"
+                :disabled="submitting || studentLocked"
               />
               <div v-if="errors.name" class="form-error">{{ errors.name }}</div>
             </div>
 
             <!-- Email -->
             <div class="form-group">
-              <label class="form-label" for="borrower-email">Email *</label>
+              <label class="form-label" for="borrower-email">
+                Email *
+                <span v-if="studentLocked" style="font-size: 10px; color: var(--accent-emerald-dark); font-weight: 500;">🔒 ดึงจากระบบ</span>
+              </label>
               <input
                 v-model="form.email"
                 class="form-input"
-                :class="{ error: errors.email }"
+                :class="{ error: errors.email, 'input-locked': studentLocked }"
                 type="email"
                 placeholder="example@mail.com"
                 id="borrower-email"
-                :disabled="submitting"
+                :disabled="submitting || studentLocked"
               />
               <div v-if="errors.email" class="form-error">{{ errors.email }}</div>
             </div>
 
             <!-- Faculty -->
             <div class="form-group">
-              <label class="form-label" for="borrower-faculty">คณะ *</label>
+              <label class="form-label" for="borrower-faculty">
+                คณะ *
+                <span v-if="studentLocked" style="font-size: 10px; color: var(--accent-emerald-dark); font-weight: 500;">🔒 ดึงจากระบบ</span>
+              </label>
               <select
                 v-model="form.faculty"
                 class="form-select"
-                :class="{ error: errors.faculty }"
+                :class="{ error: errors.faculty, 'input-locked': studentLocked }"
                 id="borrower-faculty"
-                :disabled="submitting"
+                :disabled="submitting || studentLocked"
               >
                 <option value="">-- เลือกคณะ --</option>
                 <option value="วิศวกรรมศาสตร์">วิศวกรรมศาสตร์</option>
@@ -421,7 +622,7 @@ function closeModal() {
               <div v-for="eq in equipment" :key="eq.รหัสอุปกรณ์"
                 style="display: flex; align-items: center; gap: 8px; padding: 6px 10px; border-radius: 8px; cursor: pointer; transition: background 150ms ease;"
                 :style="{ background: Number(eq.จำนวนคงเหลือ) > 0 ? 'transparent' : 'rgba(255,59,48,0.03)' }"
-                @click="bookCodeInput = eq.รหัสอุปกรณ์; lookupBook()"
+                @click="selectBook(eq)"
               >
                 <code style="font-weight: 700; color: var(--accent-primary); font-size: 11px; min-width: 50px;">{{ eq.รหัสอุปกรณ์ }}</code>
                 <span style="flex: 1; color: var(--text-secondary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">{{ eq.ชื่ออุปกรณ์ }}</span>
@@ -501,3 +702,110 @@ function closeModal() {
     </div>
   </div>
 </template>
+
+<style scoped>
+/* Student Auto-Lookup Styles */
+.input-locked {
+  background: rgba(52, 199, 89, 0.06) !important;
+  border-color: rgba(52, 199, 89, 0.3) !important;
+  color: var(--text-primary) !important;
+}
+
+/* === Suggestions Dropdown — ต้องเห็นชัด === */
+.student-suggestions-dropdown {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  z-index: 200;
+  margin-top: 6px;
+  background: #ffffff;
+  border: 2px solid #007AFF;
+  border-radius: 14px;
+  box-shadow:
+    0 4px 16px rgba(0, 122, 255, 0.15),
+    0 12px 40px rgba(0, 0, 0, 0.12);
+  overflow: hidden;
+  animation: dropIn 0.25s cubic-bezier(0.34, 1.4, 0.64, 1);
+}
+
+.suggestions-header {
+  padding: 10px 16px;
+  font-size: 11px;
+  font-weight: 700;
+  color: #007AFF;
+  background: rgba(0, 122, 255, 0.06);
+  border-bottom: 1.5px solid rgba(0, 122, 255, 0.12);
+  letter-spacing: 0.02em;
+}
+
+.suggestion-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 16px;
+  cursor: pointer;
+  transition: all 150ms ease;
+  border-bottom: 1px solid #f0f0f5;
+}
+
+.suggestion-item:hover {
+  background: #e8f2ff !important;
+}
+
+.suggestion-item:active {
+  background: #d4e8ff !important;
+}
+
+.suggestion-item:last-child {
+  border-bottom: none !important;
+}
+
+.suggestion-id {
+  font-weight: 800;
+  color: #007AFF;
+  font-size: 13px;
+  min-width: 80px;
+  font-family: 'SF Mono', 'Menlo', 'Consolas', monospace;
+  letter-spacing: 0.03em;
+}
+
+.suggestion-name {
+  flex: 1;
+  font-size: 14px;
+  color: #1d1d1f;
+  font-weight: 600;
+}
+
+.suggestion-faculty {
+  font-size: 12px;
+  color: #636366;
+  white-space: nowrap;
+  background: #f5f5f7;
+  padding: 3px 10px;
+  border-radius: 6px;
+  font-weight: 500;
+}
+
+@keyframes dropIn {
+  from {
+    opacity: 0;
+    transform: translateY(-8px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes fadeSlideUp {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+</style>
