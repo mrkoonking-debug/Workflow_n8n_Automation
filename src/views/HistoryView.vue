@@ -5,11 +5,17 @@ import api from '../services/api.js'
 const borrowHistory = ref([])
 const equipment = ref([])
 const loading = ref(true)
+const refreshing = ref(false)
 const errorMessage = ref('')
 const searchQuery = ref('')
 const selectedStatus = ref('ทั้งหมด')
+const lastUpdated = ref(null)
 
-onMounted(async () => {
+async function fetchData(isRefresh = false) {
+  if (isRefresh) {
+    refreshing.value = true
+    errorMessage.value = ''
+  }
   try {
     const [history, eq] = await Promise.all([
       api.getBorrowHistory(),
@@ -17,12 +23,17 @@ onMounted(async () => {
     ])
     borrowHistory.value = history
     equipment.value = eq
+    lastUpdated.value = new Date()
+    errorMessage.value = ''
   } catch (error) {
     errorMessage.value = error.message
   } finally {
     loading.value = false
+    refreshing.value = false
   }
-})
+}
+
+onMounted(() => fetchData())
 
 const statusTabs = ['ทั้งหมด', 'ยืมอยู่', 'คืนแล้ว', 'เกินกำหนด']
 
@@ -55,6 +66,11 @@ const statusCounts = computed(() => {
     else if (r.สถานะ === 'ยืมอยู่') counts['ยืมอยู่']++
   })
   return counts
+})
+
+const lastUpdatedText = computed(() => {
+  if (!lastUpdated.value) return ''
+  return lastUpdated.value.toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit', second: '2-digit' })
 })
 
 function getEquipmentName(id) {
@@ -90,13 +106,73 @@ function goToPage(page) {
     currentPage.value = page
   }
 }
+
+// Export CSV
+function exportCSV() {
+  const today = new Date().toISOString().split('T')[0]
+  const headers = ['รหัสยืม', 'รหัสนศ.', 'ชื่อผู้ยืม', 'Email', 'รหัสหนังสือ', 'ชื่อหนังสือ', 'วันที่ยืม', 'กำหนดคืน', 'วันที่คืน', 'สถานะ']
+
+  // BOM for Thai characters
+  const BOM = '\uFEFF'
+  const csvRows = [headers.join(',')]
+
+  filteredHistory.value.forEach(r => {
+    const status = r.สถานะ === 'ยืมอยู่' && r.กำหนดคืน < today ? 'เกินกำหนด' : r.สถานะ
+    const row = [
+      r.รหัสยืม,
+      r['รหัสนศ.'],
+      `"${r.ชื่อผู้ยืม}"`,
+      r.Email,
+      r.อุปกรณ์,
+      `"${getEquipmentName(r.อุปกรณ์)}"`,
+      r.วันที่ยืม,
+      r.กำหนดคืน,
+      r.วันที่คืน,
+      status,
+    ]
+    csvRows.push(row.join(','))
+  })
+
+  const blob = new Blob([BOM + csvRows.join('\n')], { type: 'text/csv;charset=utf-8;' })
+  const url = URL.createObjectURL(blob)
+  const link = document.createElement('a')
+  link.href = url
+  link.download = `borrow-history-${today}.csv`
+  link.click()
+  URL.revokeObjectURL(url)
+}
 </script>
 
 <template>
   <div class="fade-in">
-    <div class="page-header">
-      <h2>📋 ประวัติยืม-คืน</h2>
-      <p>รายการยืม-คืนอุปกรณ์ทั้งหมด</p>
+    <div class="page-header" style="display: flex; align-items: flex-start; justify-content: space-between;">
+      <div>
+        <h2>📋 ประวัติยืม-คืน</h2>
+        <p>รายการยืม-คืนหนังสือ/ทรัพยากรทั้งหมด</p>
+      </div>
+      <div v-if="!loading && !errorMessage" style="display: flex; align-items: center; gap: 8px;">
+        <span v-if="lastUpdatedText" style="font-size: 11px; color: var(--text-muted);">
+          อัปเดตเมื่อ {{ lastUpdatedText }}
+        </span>
+        <button
+          class="btn btn-secondary btn-sm"
+          @click="exportCSV"
+          :disabled="filteredHistory.length === 0"
+          style="display: flex; align-items: center; gap: 5px;"
+        >
+          📥 Export CSV
+        </button>
+        <button
+          class="btn btn-secondary btn-sm"
+          @click="fetchData(true)"
+          :disabled="refreshing"
+          style="display: flex; align-items: center; gap: 5px;"
+        >
+          <span v-if="refreshing" class="spinner" style="width: 14px; height: 14px; border-width: 2px;"></span>
+          <span v-else>🔄</span>
+          รีเฟรช
+        </button>
+      </div>
     </div>
 
     <!-- Filter Bar -->
@@ -140,7 +216,10 @@ function goToPage(page) {
         <div style="font-size: 48px; margin-bottom: 12px;">⚠️</div>
         <h3 style="color: var(--accent-rose); margin-bottom: 8px;">ไม่สามารถโหลดประวัติยืม-คืนได้</h3>
         <p style="color: var(--text-secondary); font-size: 13px;">{{ errorMessage }}</p>
-        <button class="btn btn-primary" style="margin-top: 16px;" @click="location.reload()">🔄 ลองใหม่</button>
+        <button class="btn btn-primary" style="margin-top: 16px;" @click="fetchData(true)">
+          <span v-if="refreshing" class="spinner" style="width: 16px; height: 16px; border-width: 2px;"></span>
+          <span v-else>🔄 ลองใหม่</span>
+        </button>
       </div>
     </div>
 
@@ -154,7 +233,7 @@ function goToPage(page) {
                 <th>รหัสยืม</th>
                 <th>รหัสนศ.</th>
                 <th>ผู้ยืม</th>
-                <th>อุปกรณ์</th>
+                <th>หนังสือ</th>
                 <th>วันที่ยืม</th>
                 <th>กำหนดคืน</th>
                 <th>วันที่คืน</th>

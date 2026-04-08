@@ -17,9 +17,15 @@ ChartJS.register(ArcElement, BarElement, CategoryScale, LinearScale, Tooltip, Le
 const equipment = ref([])
 const borrowHistory = ref([])
 const loading = ref(true)
+const refreshing = ref(false)
 const errorMessage = ref('')
+const lastUpdated = ref(null)
 
-onMounted(async () => {
+async function fetchData(isRefresh = false) {
+  if (isRefresh) {
+    refreshing.value = true
+    errorMessage.value = ''
+  }
   try {
     const [eq, history] = await Promise.all([
       api.getEquipment(),
@@ -27,13 +33,18 @@ onMounted(async () => {
     ])
     equipment.value = eq
     borrowHistory.value = history
+    lastUpdated.value = new Date()
+    errorMessage.value = ''
   } catch (error) {
     errorMessage.value = error.message
     console.error('❌ Dashboard:', error.message)
   } finally {
     loading.value = false
+    refreshing.value = false
   }
-})
+}
+
+onMounted(() => fetchData())
 
 // Stats
 const totalEquipment = computed(() => equipment.value.reduce((sum, e) => sum + Number(e.จำนวนทั้งหมด), 0))
@@ -42,6 +53,12 @@ const totalAvailable = computed(() => equipment.value.reduce((sum, e) => sum + N
 const overdueCount = computed(() => {
   const today = new Date().toISOString().split('T')[0]
   return borrowHistory.value.filter(r => r.สถานะ === 'ยืมอยู่' && r.กำหนดคืน < today).length
+})
+
+// Formatted last updated time
+const lastUpdatedText = computed(() => {
+  if (!lastUpdated.value) return ''
+  return lastUpdated.value.toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit', second: '2-digit' })
 })
 
 // Category chart
@@ -168,9 +185,26 @@ function getEquipmentName(id) {
 
 <template>
   <div class="fade-in">
-    <div class="page-header">
-      <h2>📊 แดชบอร์ด</h2>
-      <p>ภาพรวมระบบยืม-คืนอุปกรณ์</p>
+    <div class="page-header" style="display: flex; align-items: flex-start; justify-content: space-between;">
+      <div>
+        <h2>📊 แดชบอร์ด</h2>
+        <p>ภาพรวมระบบยืม-คืนหนังสือ/ทรัพยากร</p>
+      </div>
+      <div v-if="!loading && !errorMessage" style="display: flex; align-items: center; gap: 10px;">
+        <span v-if="lastUpdatedText" style="font-size: 11px; color: var(--text-muted);">
+          อัปเดตเมื่อ {{ lastUpdatedText }}
+        </span>
+        <button
+          class="btn btn-secondary btn-sm"
+          @click="fetchData(true)"
+          :disabled="refreshing"
+          style="display: flex; align-items: center; gap: 5px;"
+        >
+          <span v-if="refreshing" class="spinner" style="width: 14px; height: 14px; border-width: 2px;"></span>
+          <span v-else>🔄</span>
+          รีเฟรช
+        </button>
+      </div>
     </div>
 
     <!-- Loading -->
@@ -193,7 +227,10 @@ function getEquipmentName(id) {
           4. เชื่อมต่อ Google Sheets credentials<br>
           5. <strong>Activate</strong> ทุก workflow
         </div>
-        <button class="btn btn-primary" style="margin-top: 20px;" @click="location.reload()">🔄 ลองใหม่</button>
+        <button class="btn btn-primary" style="margin-top: 20px;" @click="fetchData(true)">
+          <span v-if="refreshing" class="spinner" style="width: 16px; height: 16px; border-width: 2px;"></span>
+          <span v-else>🔄 ลองใหม่</span>
+        </button>
       </div>
     </div>
 
@@ -202,7 +239,7 @@ function getEquipmentName(id) {
       <div class="stats-grid">
         <div class="stat-card blue">
           <div class="stat-card-header">
-            <span class="stat-card-label">อุปกรณ์ทั้งหมด</span>
+            <span class="stat-card-label">หนังสือทั้งหมด</span>
             <div class="stat-card-icon">📦</div>
           </div>
           <div class="stat-card-value">{{ totalEquipment }}</div>
@@ -241,7 +278,7 @@ function getEquipmentName(id) {
       <div class="grid-2" style="margin-bottom: 24px;">
         <div class="card">
           <div class="card-header">
-            <h3>📊 สัดส่วนหมวดหมู่อุปกรณ์</h3>
+            <h3>📊 สัดส่วนหมวดหมู่หนังสือ</h3>
           </div>
           <div class="card-body">
             <div class="chart-container" style="height: 280px;">
@@ -252,7 +289,7 @@ function getEquipmentName(id) {
 
         <div class="card">
           <div class="card-header">
-            <h3>🏆 อุปกรณ์ยืมบ่อยที่สุด</h3>
+            <h3>🏆 หนังสือยืมบ่อยที่สุด</h3>
           </div>
           <div class="card-body">
             <div class="chart-container" style="height: 280px;">
@@ -274,7 +311,7 @@ function getEquipmentName(id) {
                 <tr>
                   <th>รหัสยืม</th>
                   <th>ผู้ยืม</th>
-                  <th>อุปกรณ์</th>
+                  <th>หนังสือ</th>
                   <th>วันที่ยืม</th>
                   <th>กำหนดคืน</th>
                   <th>สถานะ</th>
@@ -299,6 +336,11 @@ function getEquipmentName(id) {
                       <span class="badge-dot"></span>
                       {{ item.สถานะ === 'ยืมอยู่' && item.กำหนดคืน < new Date().toISOString().split('T')[0] ? 'เกินกำหนด' : item.สถานะ }}
                     </span>
+                  </td>
+                </tr>
+                <tr v-if="recentActivity.length === 0">
+                  <td colspan="6" style="text-align: center; padding: 40px; color: var(--text-tertiary);">
+                    ยังไม่มีกิจกรรม
                   </td>
                 </tr>
               </tbody>

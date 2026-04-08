@@ -11,9 +11,11 @@ const resultMessage = ref('')
 const borrowRecord = ref(null)
 const equipment = ref([])
 const searchError = ref('')
+const returnConfirm = ref(false)
 
 async function searchBorrow() {
-  if (!searchId.value.trim()) {
+  const trimmedId = searchId.value.trim().toUpperCase()
+  if (!trimmedId) {
     searchError.value = 'กรุณากรอกรหัสยืม'
     return
   }
@@ -21,18 +23,24 @@ async function searchBorrow() {
   searching.value = true
   borrowRecord.value = null
 
-  // Load equipment for name lookup
-  if (equipment.value.length === 0) {
-    equipment.value = await api.getEquipment()
-  }
+  try {
+    // Load equipment for name lookup
+    if (equipment.value.length === 0) {
+      equipment.value = await api.getEquipment()
+    }
 
-  const record = await api.findBorrowRecord(searchId.value.trim().toUpperCase())
-  if (record) {
-    borrowRecord.value = record
-  } else {
-    searchError.value = 'ไม่พบรหัสยืมนี้ในระบบ'
+    const record = await api.findBorrowRecord(trimmedId)
+    if (record) {
+      borrowRecord.value = record
+    } else {
+      searchError.value = 'ไม่พบรหัสยืมนี้ในระบบ'
+    }
+  } catch (error) {
+    searchError.value = error.message || 'ไม่สามารถค้นหาได้ กรุณาตรวจสอบการเชื่อมต่อ n8n'
+    console.error('❌ ค้นหารหัสยืมล้มเหลว:', error.message)
+  } finally {
+    searching.value = false
   }
-  searching.value = false
 }
 
 const isOverdue = computed(() => {
@@ -52,7 +60,17 @@ function getEquipmentName(id) {
   return eq ? eq.ชื่ออุปกรณ์ : id
 }
 
+function confirmReturn() {
+  returnConfirm.value = true
+}
+
+function cancelReturn() {
+  returnConfirm.value = false
+}
+
 async function handleReturn() {
+  returnConfirm.value = false
+  if (returning.value) return // double-submit guard
   returning.value = true
   try {
     const result = await api.returnEquipment(borrowRecord.value.รหัสยืม)
@@ -67,8 +85,9 @@ async function handleReturn() {
     resultSuccess.value = false
     resultMessage.value = err.message || 'ไม่สามารถเชื่อมต่อ n8n ได้ กรุณาตรวจสอบ'
     showResult.value = true
+  } finally {
+    returning.value = false
   }
-  returning.value = false
 }
 
 function reset() {
@@ -76,14 +95,15 @@ function reset() {
   borrowRecord.value = null
   showResult.value = false
   searchError.value = ''
+  returnConfirm.value = false
 }
 </script>
 
 <template>
   <div class="fade-in">
     <div class="page-header">
-      <h2>🔄 คืนอุปกรณ์</h2>
-      <p>กรอกรหัสยืมเพื่อทำรายการคืนอุปกรณ์</p>
+      <h2>🔄 คืนหนังสือ</h2>
+      <p>กรอกรหัสยืมเพื่อทำรายการคืนหนังสือ/ทรัพยากร</p>
     </div>
 
     <div style="max-width: 700px;">
@@ -102,6 +122,7 @@ function reset() {
                 placeholder="กรอกรหัสยืม เช่น BR001"
                 id="search-borrow-id"
                 style="text-transform: uppercase;"
+                :disabled="searching"
               />
               <div v-if="searchError" class="form-error">{{ searchError }}</div>
             </div>
@@ -148,7 +169,7 @@ function reset() {
               <div>{{ borrowRecord.Email }}</div>
             </div>
             <div>
-              <div style="font-size: 12px; color: var(--text-tertiary); margin-bottom: 4px;">อุปกรณ์</div>
+              <div style="font-size: 12px; color: var(--text-tertiary); margin-bottom: 4px;">หนังสือ</div>
               <div style="font-weight: 500;">{{ getEquipmentName(borrowRecord.อุปกรณ์) }}</div>
             </div>
             <div>
@@ -172,8 +193,8 @@ function reset() {
           <div v-if="isOverdue" style="margin-top: 20px; padding: 14px 18px; background: rgba(255,59,48,0.06); border: 1px solid rgba(255,59,48,0.15); border-radius: 10px; display: flex; align-items: center; gap: 10px;">
             <span style="font-size: 20px;">⚠️</span>
             <div>
-              <div style="font-weight: 600; color: var(--accent-rose); font-size: 14px;">อุปกรณ์เกินกำหนดคืน {{ overdueDays }} วัน</div>
-              <div style="font-size: 12px; color: var(--text-tertiary);">กรุณาคืนอุปกรณ์โดยเร็ว</div>
+              <div style="font-weight: 600; color: var(--accent-rose); font-size: 14px;">รายการนี้เกินกำหนดคืน {{ overdueDays }} วัน</div>
+              <div style="font-size: 12px; color: var(--text-tertiary);">กรุณาคืนโดยเร็ว</div>
             </div>
           </div>
 
@@ -182,17 +203,17 @@ function reset() {
             <button
               class="btn btn-success btn-lg"
               style="width: 100%;"
-              @click="handleReturn"
+              @click="confirmReturn"
               :disabled="returning"
             >
               <span v-if="returning" class="spinner" style="width: 18px; height: 18px; border-width: 2px;"></span>
-              <span v-else>✅ ยืนยันคืนอุปกรณ์</span>
+              <span v-else>✅ ยืนยันคืนหนังสือ</span>
             </button>
           </div>
 
           <!-- Already Returned Info -->
           <div v-if="borrowRecord.สถานะ === 'คืนแล้ว'" style="margin-top: 20px; padding: 14px 18px; background: rgba(0,122,255,0.05); border: 1px solid rgba(0,122,255,0.12); border-radius: 10px; text-align: center;">
-            <div style="font-weight: 600; color: var(--accent-primary);">อุปกรณ์นี้ถูกคืนแล้ว</div>
+            <div style="font-weight: 600; color: var(--accent-primary);">รายการนี้ถูกคืนแล้ว</div>
             <div style="font-size: 13px; color: var(--text-tertiary); margin-top: 4px;">คืนเมื่อ {{ borrowRecord.วันที่คืน }}</div>
           </div>
         </div>
@@ -204,12 +225,45 @@ function reset() {
       </div>
     </div>
 
+    <!-- Confirm Return Modal -->
+    <div v-if="returnConfirm" class="modal-overlay" @click.self="cancelReturn">
+      <div class="modal-content">
+        <div style="font-size: 48px; text-align: center; margin-bottom: 12px;">🔄</div>
+        <h3 style="text-align: center;">ยืนยันการคืนหนังสือ?</h3>
+        <div style="margin: 16px 0; padding: 14px; background: var(--bg-input); border-radius: 10px; font-size: 13px;">
+          <div style="display: flex; justify-content: space-between; margin-bottom: 6px;">
+            <span style="color: var(--text-tertiary);">รหัสยืม</span>
+            <span style="font-weight: 600; color: var(--accent-primary);">{{ borrowRecord?.รหัสยืม }}</span>
+          </div>
+          <div style="display: flex; justify-content: space-between; margin-bottom: 6px;">
+            <span style="color: var(--text-tertiary);">หนังสือ</span>
+            <span style="font-weight: 500;">{{ getEquipmentName(borrowRecord?.อุปกรณ์) }}</span>
+          </div>
+          <div style="display: flex; justify-content: space-between;">
+            <span style="color: var(--text-tertiary);">ผู้ยืม</span>
+            <span>{{ borrowRecord?.ชื่อผู้ยืม }}</span>
+          </div>
+        </div>
+        <p style="font-size: 12px; color: var(--text-tertiary); text-align: center;">
+          ⚠️ เมื่อยืนยันแล้วจะไม่สามารถย้อนกลับได้<br>
+          ระบบจะอัปเดตสถานะและส่ง Email ยืนยันทันที
+        </p>
+        <div class="modal-actions" style="justify-content: center; gap: 12px; margin-top: 20px;">
+          <button class="btn btn-secondary" @click="cancelReturn">ยกเลิก</button>
+          <button class="btn btn-success" @click="handleReturn" :disabled="returning">
+            <span v-if="returning" class="spinner" style="width: 16px; height: 16px; border-width: 2px;"></span>
+            <span v-else>✅ ยืนยันคืน</span>
+          </button>
+        </div>
+      </div>
+    </div>
+
     <!-- Result Modal -->
     <div v-if="showResult" class="modal-overlay" @click.self="showResult = false">
       <div class="modal-content" style="text-align: center;">
         <div style="font-size: 56px; margin-bottom: 16px;">{{ resultSuccess ? '✅' : '❌' }}</div>
         <h3 :style="{ color: resultSuccess ? 'var(--accent-emerald-dark)' : 'var(--accent-rose)' }">
-          {{ resultSuccess ? 'คืนอุปกรณ์สำเร็จ!' : 'ไม่สำเร็จ' }}
+          {{ resultSuccess ? 'คืนหนังสือสำเร็จ!' : 'ไม่สำเร็จ' }}
         </h3>
         <p style="margin-top: 8px;">{{ resultMessage }}</p>
         <p v-if="resultSuccess" style="font-size: 13px; color: var(--text-tertiary); margin-top: 8px;">

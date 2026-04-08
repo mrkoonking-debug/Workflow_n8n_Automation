@@ -4,19 +4,30 @@ import api from '../services/api.js'
 
 const equipment = ref([])
 const loading = ref(true)
+const refreshing = ref(false)
 const errorMessage = ref('')
 const searchQuery = ref('')
 const selectedCategory = ref('ทั้งหมด')
+const lastUpdated = ref(null)
 
-onMounted(async () => {
+async function fetchData(isRefresh = false) {
+  if (isRefresh) {
+    refreshing.value = true
+    errorMessage.value = ''
+  }
   try {
     equipment.value = await api.getEquipment()
+    lastUpdated.value = new Date()
+    errorMessage.value = ''
   } catch (error) {
     errorMessage.value = error.message
   } finally {
     loading.value = false
+    refreshing.value = false
   }
-})
+}
+
+onMounted(() => fetchData())
 
 const categories = computed(() => {
   const cats = new Set(equipment.value.map(e => e.หมวดหมู่))
@@ -33,6 +44,11 @@ const filteredEquipment = computed(() => {
   })
 })
 
+const lastUpdatedText = computed(() => {
+  if (!lastUpdated.value) return ''
+  return lastUpdated.value.toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit', second: '2-digit' })
+})
+
 function getStockPercent(item) {
   return (Number(item.จำนวนคงเหลือ) / Number(item.จำนวนทั้งหมด)) * 100
 }
@@ -47,9 +63,26 @@ function getStockColor(item) {
 
 <template>
   <div class="fade-in">
-    <div class="page-header">
-      <h2>📦 รายการอุปกรณ์</h2>
-      <p>อุปกรณ์ทั้งหมดที่มีในระบบ</p>
+    <div class="page-header" style="display: flex; align-items: flex-start; justify-content: space-between;">
+      <div>
+        <h2>📦 รายการหนังสือ</h2>
+        <p>หนังสือ/ทรัพยากรทั้งหมดที่มีในระบบ</p>
+      </div>
+      <div v-if="!loading && !errorMessage" style="display: flex; align-items: center; gap: 10px;">
+        <span v-if="lastUpdatedText" style="font-size: 11px; color: var(--text-muted);">
+          อัปเดตเมื่อ {{ lastUpdatedText }}
+        </span>
+        <button
+          class="btn btn-secondary btn-sm"
+          @click="fetchData(true)"
+          :disabled="refreshing"
+          style="display: flex; align-items: center; gap: 5px;"
+        >
+          <span v-if="refreshing" class="spinner" style="width: 14px; height: 14px; border-width: 2px;"></span>
+          <span v-else>🔄</span>
+          รีเฟรช
+        </button>
+      </div>
     </div>
 
     <!-- Filter Bar -->
@@ -62,7 +95,7 @@ function getStockColor(item) {
         <input
           v-model="searchQuery"
           class="form-input"
-          placeholder="ค้นหาอุปกรณ์... (ชื่อ, รหัส)"
+          placeholder="ค้นหาหนังสือ... (ชื่อ, รหัส)"
           id="search-equipment"
         />
       </div>
@@ -89,9 +122,12 @@ function getStockColor(item) {
     <div v-else-if="errorMessage" class="card slide-up" style="text-align: center;">
       <div class="card-body" style="padding: 40px;">
         <div style="font-size: 48px; margin-bottom: 12px;">⚠️</div>
-        <h3 style="color: var(--accent-rose); margin-bottom: 8px;">ไม่สามารถโหลดข้อมูลอุปกรณ์ได้</h3>
+        <h3 style="color: var(--accent-rose); margin-bottom: 8px;">ไม่สามารถโหลดข้อมูลหนังสือได้</h3>
         <p style="color: var(--text-secondary); font-size: 13px;">{{ errorMessage }}</p>
-        <button class="btn btn-primary" style="margin-top: 16px;" @click="location.reload()">🔄 ลองใหม่</button>
+        <button class="btn btn-primary" style="margin-top: 16px;" @click="fetchData(true)">
+          <span v-if="refreshing" class="spinner" style="width: 16px; height: 16px; border-width: 2px;"></span>
+          <span v-else>🔄 ลองใหม่</span>
+        </button>
       </div>
     </div>
 
@@ -103,7 +139,7 @@ function getStockColor(item) {
             <thead>
               <tr>
                 <th>รหัส</th>
-                <th>ชื่ออุปกรณ์</th>
+                <th>ชื่อหนังสือ/ทรัพยากร</th>
                 <th>หมวดหมู่</th>
                 <th>จำนวนทั้งหมด</th>
                 <th>คงเหลือ</th>
@@ -148,9 +184,14 @@ function getStockColor(item) {
         </div>
         <div v-if="filteredEquipment.length === 0" class="empty-state">
           <div class="empty-state-icon">🔍</div>
-          <h3>ไม่พบอุปกรณ์</h3>
+          <h3>ไม่พบหนังสือ</h3>
           <p>ลองเปลี่ยนคำค้นหาหรือตัวกรอง</p>
         </div>
+      </div>
+      <!-- Summary Bar -->
+      <div v-if="filteredEquipment.length > 0" style="padding: 12px 20px; border-top: 1px solid var(--border-primary); display: flex; justify-content: space-between; font-size: 12px; color: var(--text-tertiary);">
+        <span>แสดง {{ filteredEquipment.length }} จาก {{ equipment.length }} รายการ</span>
+        <span>รวมคงเหลือ: <strong style="color: var(--accent-emerald-dark);">{{ filteredEquipment.reduce((s, e) => s + Number(e.จำนวนคงเหลือ), 0) }}</strong> ชิ้น</span>
       </div>
     </div>
   </div>

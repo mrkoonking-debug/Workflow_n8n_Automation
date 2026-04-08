@@ -23,6 +23,27 @@ services:
       - TZ=Asia/Bangkok
     volumes:
       - n8n_data:/home/node/.n8n
+    # Health check — ตรวจสอบว่า n8n ยังทำงาน
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q --spider http://localhost:5678/healthz || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+    # Resource limits — ป้องกัน memory leak
+    deploy:
+      resources:
+        limits:
+          memory: 1G
+          cpus: '1.0'
+        reservations:
+          memory: 256M
+    # Log rotation — ป้องกัน log โตจนเต็ม disk
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
 
 volumes:
   n8n_data:
