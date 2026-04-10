@@ -2,6 +2,7 @@ import { createRouter, createWebHistory } from 'vue-router'
 import DashboardView from '../views/DashboardView.vue'
 import EquipmentView from '../views/EquipmentView.vue'
 import BorrowView from '../views/BorrowView.vue'
+import ReturnView from '../views/ReturnView.vue'
 import HistoryView from '../views/HistoryView.vue'
 
 const routes = [
@@ -9,8 +10,8 @@ const routes = [
   { path: '/dashboard', name: 'Dashboard', component: DashboardView, meta: { title: 'แดชบอร์ด', icon: 'dashboard' } },
   { path: '/equipment', name: 'Equipment', component: EquipmentView, meta: { title: 'รายการหนังสือ', icon: 'equipment' } },
   { path: '/borrow', name: 'Borrow', component: BorrowView, meta: { title: 'ยืมหนังสือ', icon: 'borrow' } },
-  { path: '/return', redirect: '/history' },
-  { path: '/history', name: 'History', component: HistoryView, meta: { title: 'รายการยืม-คืน', icon: 'history' } },
+  { path: '/return', name: 'Return', component: ReturnView, meta: { title: 'คืนหนังสือ', icon: 'return' } },
+  { path: '/history', name: 'History', component: HistoryView, meta: { title: 'ประวัติยืม-คืน', icon: 'history' } },
 ]
 
 const router = createRouter({

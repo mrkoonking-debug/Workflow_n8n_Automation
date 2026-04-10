@@ -10,7 +10,8 @@ const navItems = [
   { path: '/dashboard', label: 'แดชบอร์ด', icon: 'dashboard' },
   { path: '/equipment', label: 'รายการหนังสือ', icon: 'equipment' },
   { path: '/borrow', label: 'ยืมหนังสือ', icon: 'borrow' },
-  { path: '/history', label: 'รายการยืม-คืน', icon: 'history' },
+  { path: '/return', label: 'คืนหนังสือ', icon: 'return' },
+  { path: '/history', label: 'ประวัติยืม-คืน', icon: 'history' },
 ]
 
 // ==========================================
@@ -94,6 +95,12 @@ if (typeof window !== 'undefined') {
             <polyline points="14 2 14 8 20 8"></polyline>
             <line x1="12" y1="18" x2="12" y2="12"></line>
             <line x1="9" y1="15" x2="15" y2="15"></line>
+          </svg>
+
+          <!-- Return Icon -->
+          <svg v-if="item.icon === 'return'" class="nav-item-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="9 14 4 9 9 4"></polyline>
+            <path d="M20 20v-7a4 4 0 0 0-4-4H4"></path>
           </svg>
 
           <!-- History Icon -->

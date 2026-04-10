@@ -185,8 +185,8 @@ function exportCSV() {
   <div class="fade-in">
     <div class="page-header" style="display: flex; align-items: flex-start; justify-content: space-between;">
       <div>
-        <h2>📋 รายการยืม-คืน</h2>
-        <p>รายการยืม-คืนหนังสือ/ทรัพยากรทั้งหมด</p>
+        <h2>📋 ประวัติยืม-คืน</h2>
+        <p>รายการยืม-คืนหนังสือ/ทรัพยากรทั้งหมด — ดูสถานะ, Export CSV, หรือคืนหนังสือ</p>
       </div>
       <div v-if="!loading && !errorMessage" style="display: flex; align-items: center; gap: 8px;">
         <span v-if="lastUpdatedText" style="font-size: 11px; color: var(--text-muted);">
