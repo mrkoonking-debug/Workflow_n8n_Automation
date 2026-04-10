@@ -77,18 +77,27 @@
     },
     {
       "parameters": {
-        "assignments": {
-          "assignments": [
-            { "id": "borrowId", "name": "borrowId", "value": "=BR{{ $now.format('MMdd') }}{{ Math.random().toString(36).substring(2, 6).toUpperCase() }}", "type": "string" },
-            { "id": "borrowDate", "name": "borrowDate", "value": "={{ $now.format('yyyy-MM-dd') }}", "type": "string" }
-          ]
-        }
+        "operation": "read",
+        "documentId": { "__rl": true, "mode": "list", "value": "" },
+        "sheetName": { "__rl": true, "mode": "list", "value": "รายการยืม" },
+        "options": {}
+      },
+      "id": "read-borrow-for-id",
+      "name": "Read รายการยืม - นับจำนวน",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.5,
+      "position": [1130, 200],
+      "credentials": { "googleSheetsOAuth2Api": { "id": "", "name": "Google Sheets" } }
+    },
+    {
+      "parameters": {
+        "jsCode": "// สร้างรหัสยืมแบบ Running Number: BR2026-00001\nconst allRecords = $input.all();\nconst year = $now.format('yyyy');\nlet maxNum = 0;\n\nfor (const item of allRecords) {\n  const id = item.json['รหัสยืม'] || '';\n  const match = id.match(/^BR\\d{4}-(\\d{5})$/);\n  if (match) {\n    const num = parseInt(match[1]);\n    if (num > maxNum) maxNum = num;\n  }\n}\n\nconst nextNum = maxNum + 1;\nconst borrowId = `BR${year}-${String(nextNum).padStart(5, '0')}`;\n\nreturn [{\n  json: {\n    borrowId: borrowId,\n    borrowDate: $now.format('yyyy-MM-dd')\n  }\n}];"
       },
       "id": "generate-id",
       "name": "สร้างรหัสยืม",
-      "type": "n8n-nodes-base.set",
-      "typeVersion": 3.4,
-      "position": [1130, 200]
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1350, 200]
     },
     {
       "parameters": {
@@ -197,10 +206,11 @@
     "Read Equipment Sheet": { "main": [[{ "node": "IF - ตรวจสอบสต็อก", "type": "main", "index": 0 }]] },
     "IF - ตรวจสอบสต็อก": {
       "main": [
-        [{ "node": "สร้างรหัสยืม", "type": "main", "index": 0 }],
+        [{ "node": "Read รายการยืม - นับจำนวน", "type": "main", "index": 0 }],
         [{ "node": "Respond - อุปกรณ์หมด", "type": "main", "index": 0 }]
       ]
     },
+    "Read รายการยืม - นับจำนวน": { "main": [[{ "node": "สร้างรหัสยืม", "type": "main", "index": 0 }]] },
     "สร้างรหัสยืม": { "main": [[{ "node": "Append to รายการยืม", "type": "main", "index": 0 }]] },
     "Append to รายการยืม": { "main": [[{ "node": "Update Equipment - ลดจำนวน", "type": "main", "index": 0 }]] },
     "Update Equipment - ลดจำนวน": { "main": [[{ "node": "Send Email - ยืนยันยืม", "type": "main", "index": 0 }]] },
