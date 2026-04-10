@@ -51,7 +51,7 @@
     },
     {
       "parameters": {
-        "jsCode": "// ค้นหารายการยืมที่ตรงกับ borrowId + สถานะ = ยืมอยู่\nconst allItems = $input.all();\nconst borrowId = $('Edit Fields - รับรหัสยืม').first().json.borrowId;\n\nfor (const item of allItems) {\n  if (item.json['รหัสยืม'] === borrowId && item.json['สถานะ'] === 'ยืมอยู่') {\n    return [{\n      json: {\n        found: true,\n        รหัสยืม: item.json['รหัสยืม'],\n        ชื่อผู้ยืม: item.json['ชื่อผู้ยืม'],\n        Email: item.json['Email'],\n        อุปกรณ์: item.json['อุปกรณ์'],\n        'รหัสนศ.': item.json['รหัสนศ.'],\n        วันที่ยืม: item.json['วันที่ยืม'],\n        กำหนดคืน: item.json['กำหนดคืน'],\n        สถานะ: item.json['สถานะ']\n      }\n    }];\n  }\n}\n\n// ไม่พบรายการที่ตรงกัน\nreturn [{ json: { found: false } }];"
+        "jsCode": "// ค้นหารายการยืมที่ตรงกับ borrowId + สถานะ = ยืมอยู่ หรือ เกินกำหนด\nconst allItems = $input.all();\nconst borrowId = $('Edit Fields - รับรหัสยืม').first().json.borrowId;\n\nfor (const item of allItems) {\n  if (item.json['รหัสยืม'] === borrowId && (item.json['สถานะ'] === 'ยืมอยู่' || item.json['สถานะ'] === 'เกินกำหนด')) {\n    return [{\n      json: {\n        found: true,\n        รหัสยืม: item.json['รหัสยืม'],\n        ชื่อผู้ยืม: item.json['ชื่อผู้ยืม'],\n        Email: item.json['Email'],\n        อุปกรณ์: item.json['อุปกรณ์'],\n        'รหัสนศ.': item.json['รหัสนศ.'],\n        วันที่ยืม: item.json['วันที่ยืม'],\n        กำหนดคืน: item.json['กำหนดคืน'],\n        สถานะ: item.json['สถานะ']\n      }\n    }];\n  }\n}\n\n// ไม่พบรายการที่ตรงกัน\nreturn [{ json: { found: false } }];"
       },
       "id": "code-find-record",
       "name": "Code - ค้นหารายการยืม",

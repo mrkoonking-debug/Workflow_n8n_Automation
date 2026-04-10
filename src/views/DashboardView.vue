@@ -328,11 +328,11 @@ function getEquipmentName(id) {
                       :class="{
                         'badge-borrowed': item.สถานะ === 'ยืมอยู่' && item.กำหนดคืน >= new Date().toISOString().split('T')[0],
                         'badge-returned': item.สถานะ === 'คืนแล้ว',
-                        'badge-overdue': item.สถานะ === 'ยืมอยู่' && item.กำหนดคืน < new Date().toISOString().split('T')[0],
+                        'badge-overdue': item.สถานะ === 'เกินกำหนด' || (item.สถานะ === 'ยืมอยู่' && item.กำหนดคืน < new Date().toISOString().split('T')[0]),
                       }"
                     >
                       <span class="badge-dot"></span>
-                      {{ item.สถานะ === 'ยืมอยู่' && item.กำหนดคืน < new Date().toISOString().split('T')[0] ? 'เกินกำหนด' : item.สถานะ }}
+                      {{ item.สถานะ === 'เกินกำหนด' || (item.สถานะ === 'ยืมอยู่' && item.กำหนดคืน < new Date().toISOString().split('T')[0]) ? 'เกินกำหนด' : item.สถานะ }}
                     </span>
                   </td>
                 </tr>

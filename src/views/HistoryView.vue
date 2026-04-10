@@ -52,7 +52,7 @@ const filteredHistory = computed(() => {
       r['รหัสนศ.'].includes(searchQuery.value) ||
       r.รหัสยืม.toUpperCase().includes(searchQuery.value.toUpperCase())
 
-    const isOverdue = r.สถานะ === 'ยืมอยู่' && r.กำหนดคืน < today
+    const isOverdue = r.สถานะ === 'เกินกำหนด' || (r.สถานะ === 'ยืมอยู่' && r.กำหนดคืน && r.กำหนดคืน < today)
     let matchStatus = true
     if (selectedStatus.value === 'ยืมอยู่') matchStatus = r.สถานะ === 'ยืมอยู่' && !isOverdue
     else if (selectedStatus.value === 'คืนแล้ว') matchStatus = r.สถานะ === 'คืนแล้ว'
@@ -72,7 +72,7 @@ const statusCounts = computed(() => {
   const counts = { ทั้งหมด: borrowHistory.value.length, ยืมอยู่: 0, คืนแล้ว: 0, เกินกำหนด: 0 }
   borrowHistory.value.forEach(r => {
     if (r.สถานะ === 'คืนแล้ว') counts['คืนแล้ว']++
-    else if (r.สถานะ === 'ยืมอยู่' && r.กำหนดคืน < today) counts['เกินกำหนด']++
+    else if (r.สถานะ === 'เกินกำหนด' || (r.สถานะ === 'ยืมอยู่' && r.กำหนดคืน && r.กำหนดคืน < today)) counts['เกินกำหนด']++
     else if (r.สถานะ === 'ยืมอยู่') counts['ยืมอยู่']++
   })
   return counts
@@ -91,13 +91,15 @@ function getEquipmentName(id) {
 function getStatusBadgeClass(record) {
   const today = new Date().toISOString().split('T')[0]
   if (record.สถานะ === 'คืนแล้ว') return 'badge-returned'
-  if (record.สถานะ === 'ยืมอยู่' && record.กำหนดคืน < today) return 'badge-overdue'
+  if (record.สถานะ === 'เกินกำหนด') return 'badge-overdue'
+  if (record.สถานะ === 'ยืมอยู่' && record.กำหนดคืน && record.กำหนดคืน < today) return 'badge-overdue'
   return 'badge-borrowed'
 }
 
 function getStatusLabel(record) {
   const today = new Date().toISOString().split('T')[0]
-  if (record.สถานะ === 'ยืมอยู่' && record.กำหนดคืน < today) return 'เกินกำหนด'
+  if (record.สถานะ === 'เกินกำหนด') return 'เกินกำหนด'
+  if (record.สถานะ === 'ยืมอยู่' && record.กำหนดคืน && record.กำหนดคืน < today) return 'เกินกำหนด'
   return record.สถานะ
 }
 
@@ -296,7 +298,7 @@ function exportCSV() {
                 </td>
                 <td style="text-align: center;">
                   <button
-                    v-if="record.สถานะ === 'ยืมอยู่'"
+                    v-if="record.สถานะ === 'ยืมอยู่' || record.สถานะ === 'เกินกำหนด'"
                     class="btn-return"
                     @click="confirmReturn(record)"
                     :disabled="returningId === record.รหัสยืม"

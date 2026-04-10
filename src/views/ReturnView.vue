@@ -64,7 +64,7 @@ async function searchBorrow() {
 
 // === Computed: สถานะ ===
 const isOverdue = computed(() => {
-  if (!borrowRecord.value || borrowRecord.value.สถานะ !== 'ยืมอยู่') return false
+  if (!borrowRecord.value || (borrowRecord.value.สถานะ !== 'ยืมอยู่' && borrowRecord.value.สถานะ !== 'เกินกำหนด')) return false
   return borrowRecord.value.กำหนดคืน < new Date().toISOString().split('T')[0]
 })
 
@@ -86,7 +86,7 @@ const borrowDays = computed(() => {
 const returnStats = computed(() => {
   const today = new Date().toISOString().split('T')[0]
   const returned = borrowHistory.value.filter(r => r.สถานะ === 'คืนแล้ว')
-  const active = borrowHistory.value.filter(r => r.สถานะ === 'ยืมอยู่')
+  const active = borrowHistory.value.filter(r => r.สถานะ === 'ยืมอยู่' || r.สถานะ === 'เกินกำหนด')
   const overdue = active.filter(r => r.กำหนดคืน < today)
   return {
     totalReturned: returned.length,
@@ -99,7 +99,7 @@ const returnStats = computed(() => {
 const pendingReturns = computed(() => {
   const today = new Date().toISOString().split('T')[0]
   return borrowHistory.value
-    .filter(r => r.สถานะ === 'ยืมอยู่')
+    .filter(r => r.สถานะ === 'ยืมอยู่' || r.สถานะ === 'เกินกำหนด')
     .sort((a, b) => {
       // เกินกำหนดก่อน
       const aOverdue = a.กำหนดคืน < today ? 0 : 1
@@ -204,7 +204,7 @@ function quickReturn(record) {
                   v-model="searchId"
                   class="form-input"
                   :class="{ error: searchError }"
-                  placeholder="กรอกรหัสยืม เช่น BR20260409010519"
+                  placeholder="กรอกรหัสยืม เช่น BR2026-00001"
                   id="search-borrow-id"
                   style="text-transform: uppercase; font-weight: 600; letter-spacing: 0.04em; font-size: 16px; padding: 14px 18px;"
                   :disabled="searching"
@@ -285,7 +285,7 @@ function quickReturn(record) {
             </div>
 
             <!-- Return Button -->
-            <div v-if="borrowRecord.สถานะ === 'ยืมอยู่'" style="margin-top: 24px;">
+            <div v-if="borrowRecord.สถานะ === 'ยืมอยู่' || borrowRecord.สถานะ === 'เกินกำหนด'" style="margin-top: 24px;">
               <button
                 class="btn btn-success btn-lg"
                 style="width: 100%;"
@@ -350,7 +350,7 @@ function quickReturn(record) {
                 <span style="background: var(--blue); color: white; width: 22px; height: 22px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 700; flex-shrink: 0;">1</span>
                 <div>
                   <strong>พิมพ์รหัสยืม</strong>
-                  <div style="color: var(--text-tertiary); font-size: 12px; margin-top: 2px;">เช่น BR20260409010519 (ได้จาก Email ยืนยัน หรือหน้าประวัติยืม-คืน)</div>
+                  <div style="color: var(--text-tertiary); font-size: 12px; margin-top: 2px;">เช่น BR2026-00001 (ได้จาก Email ยืนยัน หรือหน้าประวัติยืม-คืน)</div>
                 </div>
               </li>
               <li style="display: flex; gap: 10px; align-items: flex-start;">
