@@ -79,7 +79,7 @@
       "parameters": {
         "assignments": {
           "assignments": [
-            { "id": "borrowId", "name": "borrowId", "value": "=BR{{ $now.format('yyyyMMddHHmmss') }}", "type": "string" },
+            { "id": "borrowId", "name": "borrowId", "value": "=BR{{ $now.format('MMdd') }}{{ Math.random().toString(36).substring(2, 6).toUpperCase() }}", "type": "string" },
             { "id": "borrowDate", "name": "borrowDate", "value": "={{ $now.format('yyyy-MM-dd') }}", "type": "string" }
           ]
         }
