@@ -11,6 +11,13 @@ const searchQuery = ref('')
 const selectedStatus = ref('ทั้งหมด')
 const lastUpdated = ref(null)
 
+// === Return Logic ===
+const returningId = ref(null)
+const returnConfirm = ref(null)
+const showResult = ref(false)
+const resultSuccess = ref(false)
+const resultMessage = ref('')
+
 async function fetchData(isRefresh = false) {
   if (isRefresh) {
     refreshing.value = true
@@ -40,13 +47,11 @@ const statusTabs = ['ทั้งหมด', 'ยืมอยู่', 'คืน
 const filteredHistory = computed(() => {
   const today = new Date().toISOString().split('T')[0]
   return borrowHistory.value.filter(r => {
-    // Search filter
     const matchSearch = searchQuery.value === '' ||
       r.ชื่อผู้ยืม.includes(searchQuery.value) ||
       r['รหัสนศ.'].includes(searchQuery.value) ||
       r.รหัสยืม.toUpperCase().includes(searchQuery.value.toUpperCase())
 
-    // Status filter
     const isOverdue = r.สถานะ === 'ยืมอยู่' && r.กำหนดคืน < today
     let matchStatus = true
     if (selectedStatus.value === 'ยืมอยู่') matchStatus = r.สถานะ === 'ยืมอยู่' && !isOverdue
@@ -54,6 +59,11 @@ const filteredHistory = computed(() => {
     else if (selectedStatus.value === 'เกินกำหนด') matchStatus = isOverdue
 
     return matchSearch && matchStatus
+  }).sort((a, b) => {
+    // เรียงจากล่าสุด → เก่าสุด
+    const dateA = a.วันที่ยืม || ''
+    const dateB = b.วันที่ยืม || ''
+    return dateB.localeCompare(dateA) || b.รหัสยืม.localeCompare(a.รหัสยืม)
   })
 })
 
@@ -91,6 +101,35 @@ function getStatusLabel(record) {
   return record.สถานะ
 }
 
+// === Return Functions ===
+function confirmReturn(record) {
+  returnConfirm.value = record
+}
+
+async function handleReturn() {
+  const record = returnConfirm.value
+  if (!record || returningId.value) return
+  returningId.value = record.รหัสยืม
+  returnConfirm.value = null
+  try {
+    const result = await api.returnEquipment(record.รหัสยืม)
+    resultSuccess.value = result.success
+    resultMessage.value = result.message || (result.success ? 'คืนหนังสือสำเร็จ!' : 'ไม่สำเร็จ')
+    showResult.value = true
+    if (result.success) {
+      // อัปเดต local data ทันที
+      record.สถานะ = 'คืนแล้ว'
+      record.วันที่คืน = new Date().toISOString().split('T')[0]
+    }
+  } catch (err) {
+    resultSuccess.value = false
+    resultMessage.value = err.message || 'ไม่สามารถเชื่อมต่อ n8n ได้'
+    showResult.value = true
+  } finally {
+    returningId.value = null
+  }
+}
+
 // Pagination
 const currentPage = ref(1)
 const itemsPerPage = 10
@@ -112,7 +151,6 @@ function exportCSV() {
   const today = new Date().toISOString().split('T')[0]
   const headers = ['รหัสยืม', 'รหัสนศ.', 'ชื่อผู้ยืม', 'Email', 'รหัสหนังสือ', 'ชื่อหนังสือ', 'วันที่ยืม', 'กำหนดคืน', 'วันที่คืน', 'สถานะ']
 
-  // BOM for Thai characters
   const BOM = '\uFEFF'
   const csvRows = [headers.join(',')]
 
@@ -147,7 +185,7 @@ function exportCSV() {
   <div class="fade-in">
     <div class="page-header" style="display: flex; align-items: flex-start; justify-content: space-between;">
       <div>
-        <h2>📋 ประวัติยืม-คืน</h2>
+        <h2>📋 รายการยืม-คืน</h2>
         <p>รายการยืม-คืนหนังสือ/ทรัพยากรทั้งหมด</p>
       </div>
       <div v-if="!loading && !errorMessage" style="display: flex; align-items: center; gap: 8px;">
@@ -214,7 +252,7 @@ function exportCSV() {
     <div v-else-if="errorMessage" class="card slide-up" style="text-align: center;">
       <div class="card-body" style="padding: 40px;">
         <div style="font-size: 48px; margin-bottom: 12px;">⚠️</div>
-        <h3 style="color: var(--accent-rose); margin-bottom: 8px;">ไม่สามารถโหลดประวัติยืม-คืนได้</h3>
+        <h3 style="color: var(--accent-rose); margin-bottom: 8px;">ไม่สามารถโหลดข้อมูลได้</h3>
         <p style="color: var(--text-secondary); font-size: 13px;">{{ errorMessage }}</p>
         <button class="btn btn-primary" style="margin-top: 16px;" @click="fetchData(true)">
           <span v-if="refreshing" class="spinner" style="width: 16px; height: 16px; border-width: 2px;"></span>
@@ -238,6 +276,7 @@ function exportCSV() {
                 <th>กำหนดคืน</th>
                 <th>วันที่คืน</th>
                 <th>สถานะ</th>
+                <th style="text-align: center;">จัดการ</th>
               </tr>
             </thead>
             <tbody>
@@ -254,6 +293,18 @@ function exportCSV() {
                     <span class="badge-dot"></span>
                     {{ getStatusLabel(record) }}
                   </span>
+                </td>
+                <td style="text-align: center;">
+                  <button
+                    v-if="record.สถานะ === 'ยืมอยู่'"
+                    class="btn-return"
+                    @click="confirmReturn(record)"
+                    :disabled="returningId === record.รหัสยืม"
+                  >
+                    <span v-if="returningId === record.รหัสยืม" class="spinner" style="width: 12px; height: 12px; border-width: 2px;"></span>
+                    <span v-else>↩ คืนหนังสือ</span>
+                  </button>
+                  <span v-else style="font-size: 11px; color: var(--text-muted);">—</span>
                 </td>
               </tr>
             </tbody>
@@ -291,5 +342,87 @@ function exportCSV() {
     <div style="margin-top: 16px; display: flex; gap: 8px; font-size: 12px; color: var(--text-tertiary);">
       <span>แสดง {{ paginatedHistory.length }} จาก {{ filteredHistory.length }} รายการ</span>
     </div>
+
+    <!-- Confirm Return Modal -->
+    <div v-if="returnConfirm" class="modal-overlay" @click.self="returnConfirm = null">
+      <div class="modal-content">
+        <div style="font-size: 48px; text-align: center; margin-bottom: 12px;">🔄</div>
+        <h3 style="text-align: center;">ยืนยันการคืนหนังสือ?</h3>
+        <div style="margin: 16px 0; padding: 14px; background: var(--bg-input); border-radius: 10px; font-size: 13px;">
+          <div style="display: flex; justify-content: space-between; margin-bottom: 6px;">
+            <span style="color: var(--text-tertiary);">รหัสยืม</span>
+            <span style="font-weight: 600; color: var(--accent-primary);">{{ returnConfirm?.รหัสยืม }}</span>
+          </div>
+          <div style="display: flex; justify-content: space-between; margin-bottom: 6px;">
+            <span style="color: var(--text-tertiary);">หนังสือ</span>
+            <span style="font-weight: 500;">{{ getEquipmentName(returnConfirm?.อุปกรณ์) }}</span>
+          </div>
+          <div style="display: flex; justify-content: space-between;">
+            <span style="color: var(--text-tertiary);">ผู้ยืม</span>
+            <span>{{ returnConfirm?.ชื่อผู้ยืม }}</span>
+          </div>
+        </div>
+        <p style="font-size: 12px; color: var(--text-tertiary); text-align: center;">
+          ⚠️ เมื่อยืนยันแล้วจะไม่สามารถย้อนกลับได้<br>
+          ระบบจะอัปเดตสถานะและส่ง Email ยืนยันทันที
+        </p>
+        <div class="modal-actions" style="justify-content: center; gap: 12px; margin-top: 20px;">
+          <button class="btn btn-secondary" @click="returnConfirm = null">ยกเลิก</button>
+          <button class="btn btn-success" @click="handleReturn" :disabled="returningId">
+            <span v-if="returningId" class="spinner" style="width: 16px; height: 16px; border-width: 2px;"></span>
+            <span v-else>✅ ยืนยันคืน</span>
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Result Modal -->
+    <div v-if="showResult" class="modal-overlay" @click.self="showResult = false">
+      <div class="modal-content" style="text-align: center;">
+        <div style="font-size: 56px; margin-bottom: 16px;">{{ resultSuccess ? '✅' : '❌' }}</div>
+        <h3 :style="{ color: resultSuccess ? 'var(--accent-emerald-dark)' : 'var(--accent-rose)' }">
+          {{ resultSuccess ? 'คืนหนังสือสำเร็จ!' : 'ไม่สำเร็จ' }}
+        </h3>
+        <p style="margin-top: 8px;">{{ resultMessage }}</p>
+        <div class="modal-actions" style="justify-content: center; margin-top: 24px;">
+          <button class="btn btn-primary" @click="showResult = false">ตกลง</button>
+        </div>
+      </div>
+    </div>
   </div>
 </template>
+
+<style scoped>
+.btn-return {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 6px 14px;
+  border: none;
+  border-radius: 8px;
+  background: linear-gradient(135deg, #34c759 0%, #30d158 100%);
+  color: white;
+  font-size: 12px;
+  font-weight: 600;
+  font-family: inherit;
+  cursor: pointer;
+  transition: all 150ms ease;
+  white-space: nowrap;
+}
+
+.btn-return:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(52, 199, 89, 0.3);
+}
+
+.btn-return:active {
+  transform: scale(0.97);
+}
+
+.btn-return:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
+}
+</style>
