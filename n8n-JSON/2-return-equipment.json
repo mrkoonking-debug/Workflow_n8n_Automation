@@ -84,7 +84,10 @@
             { "id": "save-name", "name": "savedName", "value": "={{ $json['ชื่อผู้ยืม'] }}", "type": "string" },
             { "id": "save-email", "name": "savedEmail", "value": "={{ $json['Email'] }}", "type": "string" },
             { "id": "save-equipment", "name": "savedEquipmentId", "value": "={{ $json['อุปกรณ์'] }}", "type": "string" },
-            { "id": "save-studentId", "name": "savedStudentId", "value": "={{ $json['รหัสนศ.'] }}", "type": "string" }
+            { "id": "save-studentId", "name": "savedStudentId", "value": "={{ $json['รหัสนศ.'] }}", "type": "string" },
+            { "id": "save-borrowrow", "name": "รหัสยืม", "value": "={{ $json['รหัสยืม'] }}", "type": "string" },
+            { "id": "save-status", "name": "สถานะ", "value": "คืนแล้ว", "type": "string" },
+            { "id": "save-returndate", "name": "วันที่คืน", "value": "={{ $now.format('yyyy-MM-dd') }}", "type": "string" }
           ]
         }
       },
@@ -102,9 +105,11 @@
         "columns": {
           "mappingMode": "defineBelow",
           "value": {
+            "รหัสยืม": "={{ $json['รหัสยืม'] }}",
             "สถานะ": "คืนแล้ว",
             "วันที่คืน": "={{ $now.format('yyyy-MM-dd') }}"
-          }
+          },
+          "matchingColumns": ["รหัสยืม"]
         },
         "options": {}
       },
@@ -160,7 +165,8 @@
           "value": {
             "รหัสอุปกรณ์": "={{ $json['รหัสอุปกรณ์'] }}",
             "จำนวนคงเหลือ": "={{ Number($json['จำนวนคงเหลือ']) + 1 }}"
-          }
+          },
+          "matchingColumns": ["รหัสอุปกรณ์"]
         },
         "options": {}
       },
@@ -245,5 +251,5 @@
   "tags": [{ "name": "Equipment Lending" }],
   "triggerCount": 0,
   "updatedAt": "2026-04-10T00:00:00.000Z",
-  "versionId": "2"
+  "versionId": "3"
 }
