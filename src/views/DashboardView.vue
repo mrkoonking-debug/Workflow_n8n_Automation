@@ -210,22 +210,20 @@ function getEquipmentName(id) {
     <!-- Loading -->
     <div v-if="loading" class="loading-overlay">
       <div class="spinner"></div>
-      <span>กำลังโหลดข้อมูลจาก n8n + Google Sheets...</span>
+      <span>กำลังโหลดข้อมูล...</span>
     </div>
 
     <!-- Error State — n8n ไม่เชื่อมต่อ -->
     <div v-else-if="errorMessage" class="card slide-up" style="max-width: 600px; margin: 60px auto; text-align: center;">
       <div class="card-body" style="padding: 40px;">
         <div style="font-size: 56px; margin-bottom: 16px;">⚠️</div>
-        <h3 style="font-size: 20px; font-weight: 700; margin-bottom: 8px; color: var(--accent-rose);">ไม่สามารถเชื่อมต่อ n8n ได้</h3>
+        <h3 style="font-size: 20px; font-weight: 700; margin-bottom: 8px; color: var(--accent-rose);">ไม่สามารถเชื่อมต่อระบบได้</h3>
         <p style="color: var(--text-secondary); margin-bottom: 20px;">{{ errorMessage }}</p>
         <div style="text-align: left; background: var(--bg-input); padding: 16px; border-radius: 10px; font-size: 13px; color: var(--text-secondary); line-height: 2;">
-          <strong style="color: var(--text-primary);">📋 วิธีแก้ไข:</strong><br>
-          1. ตรวจสอบว่า n8n กำลัง run อยู่ (<code>docker compose up -d</code>)<br>
-          2. เปิด <a href="http://localhost:5678" target="_blank" style="color: var(--accent-primary);">http://localhost:5678</a> เพื่อตรวจสอบ<br>
-          3. Import workflow JSON ทั้ง 5 ไฟล์จากโฟลเดอร์ <code>n8n-JSON/</code><br>
-          4. เชื่อมต่อ Google Sheets credentials<br>
-          5. <strong>Activate</strong> ทุก workflow
+          <strong style="color: var(--text-primary);">📋 สิ่งที่ควรตรวจสอบ:</strong><br>
+          1. ตรวจสอบการเชื่อมต่ออินเทอร์เน็ต<br>
+          2. ลองรีเฟรชหน้าเว็บ<br>
+          3. หากปัญหายังคงอยู่ กรุณาติดต่อผู้ดูแลระบบ
         </div>
         <button class="btn btn-primary" style="margin-top: 20px;" @click="fetchData(true)">
           <span v-if="refreshing" class="spinner" style="width: 16px; height: 16px; border-width: 2px;"></span>

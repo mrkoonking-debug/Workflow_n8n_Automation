@@ -115,7 +115,7 @@ function getStockColor(item) {
     <!-- Loading -->
     <div v-if="loading" class="loading-overlay">
       <div class="spinner"></div>
-      <span>กำลังโหลดข้อมูลจาก n8n + Google Sheets...</span>
+      <span>กำลังโหลดข้อมูล...</span>
     </div>
 
     <!-- Error -->

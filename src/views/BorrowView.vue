@@ -256,7 +256,7 @@ async function handleSubmit() {
       errors.value.submit = result.message || 'ไม่สามารถยืมหนังสือได้'
     }
   } catch (err) {
-    errors.value.submit = err.message || 'เกิดข้อผิดพลาด กรุณาตรวจสอบการเชื่อมต่อ n8n'
+    errors.value.submit = err.message || 'เกิดข้อผิดพลาด กรุณาลองใหม่อีกครั้ง'
   } finally {
     submitting.value = false
   }
@@ -277,7 +277,7 @@ function closeModal() {
 
     <div v-if="loading" class="loading-overlay">
       <div class="spinner"></div>
-      <span>กำลังโหลดข้อมูลจาก n8n + Google Sheets...</span>
+      <span>กำลังโหลดข้อมูล...</span>
     </div>
 
     <div v-else-if="loadError" class="card slide-up" style="text-align: center;">

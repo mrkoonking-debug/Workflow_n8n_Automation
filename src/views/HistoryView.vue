@@ -123,7 +123,7 @@ async function handleReturn() {
     }
   } catch (err) {
     resultSuccess.value = false
-    resultMessage.value = err.message || 'ไม่สามารถเชื่อมต่อ n8n ได้'
+    resultMessage.value = err.message || 'เกิดข้อผิดพลาด กรุณาลองใหม่อีกครั้ง'
     showResult.value = true
   } finally {
     returningId.value = null
@@ -245,7 +245,7 @@ function exportCSV() {
     <!-- Loading -->
     <div v-if="loading" class="loading-overlay">
       <div class="spinner"></div>
-      <span>กำลังโหลดข้อมูลจาก n8n + Google Sheets...</span>
+      <span>กำลังโหลดข้อมูล...</span>
     </div>
 
     <!-- Error -->

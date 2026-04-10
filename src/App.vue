@@ -124,7 +124,7 @@ if (typeof window !== 'undefined') {
 
       <div class="sidebar-footer">
         <p class="sidebar-footer-text">
-          Powered by n8n + Google Sheets<br>
+          Smart Lending System<br>
           © 2026 Smart Library v1.0
         </p>
       </div>

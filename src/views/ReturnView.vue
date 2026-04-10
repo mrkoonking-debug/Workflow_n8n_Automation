@@ -56,7 +56,7 @@ async function searchBorrow() {
       searchError.value = `ไม่พบรหัสยืม "${trimmedId}" ในระบบ — กรุณาตรวจสอบรหัสอีกครั้ง`
     }
   } catch (error) {
-    searchError.value = error.message || 'ไม่สามารถค้นหาได้ กรุณาตรวจสอบการเชื่อมต่อ n8n'
+    searchError.value = error.message || 'ไม่สามารถค้นหาได้ กรุณาลองใหม่อีกครั้ง'
   } finally {
     searching.value = false
   }
@@ -144,7 +144,7 @@ async function handleReturn() {
     }
   } catch (err) {
     resultSuccess.value = false
-    resultMessage.value = err.message || 'ไม่สามารถเชื่อมต่อ n8n ได้ กรุณาตรวจสอบ'
+    resultMessage.value = err.message || 'เกิดข้อผิดพลาด กรุณาลองใหม่อีกครั้ง'
     showResult.value = true
   } finally {
     returning.value = false
@@ -174,7 +174,7 @@ function quickReturn(record) {
 
     <div v-if="loading" class="loading-overlay">
       <div class="spinner"></div>
-      <span>กำลังโหลดข้อมูลจาก n8n + Google Sheets...</span>
+      <span>กำลังโหลดข้อมูล...</span>
     </div>
 
     <div v-else-if="loadError" class="card slide-up" style="text-align: center;">
@@ -364,7 +364,7 @@ function quickReturn(record) {
                 <span style="background: var(--green); color: white; width: 22px; height: 22px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 700; flex-shrink: 0;">✓</span>
                 <div>
                   <strong>กดยืนยันคืน</strong>
-                  <div style="color: var(--text-tertiary); font-size: 12px; margin-top: 2px;">ระบบอัปเดตสถานะ + เพิ่มสต็อก + ส่ง Email ยืนยันอัตโนมัติผ่าน n8n</div>
+                  <div style="color: var(--text-tertiary); font-size: 12px; margin-top: 2px;">ระบบอัปเดตสถานะ + เพิ่มสต็อก + ส่ง Email ยืนยันอัตโนมัติ</div>
                 </div>
               </li>
             </ul>
@@ -440,7 +440,7 @@ function quickReturn(record) {
         </div>
         <div style="padding: 12px 16px; background: rgba(52, 199, 89, 0.04); border: 1px solid rgba(52, 199, 89, 0.12); border-radius: 10px; margin-bottom: 8px;">
           <div style="font-size: 12px; color: var(--text-secondary); text-align: center;">
-            📨 เมื่อยืนยัน — n8n จะอัปเดต Google Sheets + ส่ง Email ยืนยันทันที
+            📨 ระบบจะอัปเดตข้อมูลและส่ง Email ยืนยันให้ผู้ยืมอัตโนมัติ
           </div>
         </div>
         <p style="font-size: 12px; color: var(--text-tertiary); text-align: center;">
@@ -467,10 +467,10 @@ function quickReturn(record) {
         <div v-if="resultSuccess" style="margin-top: 16px; padding: 14px 18px; background: rgba(52, 199, 89, 0.04); border: 1px solid rgba(52, 199, 89, 0.12); border-radius: 12px; font-size: 13px; color: var(--text-secondary);">
           <div style="display: flex; align-items: center; justify-content: center; gap: 6px; margin-bottom: 4px;">
             <span>📨</span>
-            <span style="font-weight: 600;">Email ยืนยันการคืนจะถูกส่งทันทีผ่าน n8n</span>
+            <span style="font-weight: 600;">Email ยืนยันการคืนถูกส่งเรียบร้อยแล้ว</span>
           </div>
           <div style="font-size: 12px; color: var(--text-tertiary);">
-            สต็อกหนังสือจะอัปเดตอัตโนมัติใน Google Sheets
+            สต็อกหนังสือถูกอัปเดตเรียบร้อยแล้ว
           </div>
         </div>
         <div class="modal-actions" style="justify-content: center; margin-top: 24px; gap: 10px;">
