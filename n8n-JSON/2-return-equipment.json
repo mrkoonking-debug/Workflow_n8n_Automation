@@ -51,30 +51,34 @@
     },
     {
       "parameters": {
+        "jsCode": "// ค้นหารายการยืมที่ตรงกับ borrowId + สถานะ = ยืมอยู่\nconst allItems = $input.all();\nconst borrowId = $('Edit Fields - รับรหัสยืม').first().json.borrowId;\n\nfor (const item of allItems) {\n  if (item.json['รหัสยืม'] === borrowId && item.json['สถานะ'] === 'ยืมอยู่') {\n    return [{\n      json: {\n        found: true,\n        รหัสยืม: item.json['รหัสยืม'],\n        ชื่อผู้ยืม: item.json['ชื่อผู้ยืม'],\n        Email: item.json['Email'],\n        อุปกรณ์: item.json['อุปกรณ์'],\n        'รหัสนศ.': item.json['รหัสนศ.'],\n        วันที่ยืม: item.json['วันที่ยืม'],\n        กำหนดคืน: item.json['กำหนดคืน'],\n        สถานะ: item.json['สถานะ']\n      }\n    }];\n  }\n}\n\n// ไม่พบรายการที่ตรงกัน\nreturn [{ json: { found: false } }];"
+      },
+      "id": "code-find-record",
+      "name": "Code - ค้นหารายการยืม",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [910, 300]
+    },
+    {
+      "parameters": {
         "conditions": {
           "options": { "caseSensitive": true, "leftValue": "", "typeValidation": "strict" },
           "conditions": [
             {
-              "id": "find-record",
-              "leftValue": "={{ $json['รหัสยืม'] }}",
-              "rightValue": "={{ $('Edit Fields - รับรหัสยืม').item.json.borrowId }}",
-              "operator": { "type": "string", "operation": "equals" }
-            },
-            {
-              "id": "check-status",
-              "leftValue": "={{ $json['สถานะ'] }}",
-              "rightValue": "ยืมอยู่",
-              "operator": { "type": "string", "operation": "equals" }
+              "id": "check-found",
+              "leftValue": "={{ $json.found }}",
+              "rightValue": true,
+              "operator": { "type": "boolean", "operation": "true" }
             }
           ],
           "combinator": "and"
         }
       },
       "id": "if-found",
-      "name": "IF - เจอรหัสยืม + สถานะ=ยืมอยู่",
+      "name": "IF - พบรายการ?",
       "type": "n8n-nodes-base.if",
       "typeVersion": 2,
-      "position": [910, 300]
+      "position": [1130, 300]
     },
     {
       "parameters": {
@@ -95,7 +99,7 @@
       "name": "Save ข้อมูลผู้ยืม",
       "type": "n8n-nodes-base.set",
       "typeVersion": 3.4,
-      "position": [1130, 200]
+      "position": [1350, 200]
     },
     {
       "parameters": {
@@ -117,7 +121,7 @@
       "name": "Update รายการยืม - คืนแล้ว",
       "type": "n8n-nodes-base.googleSheets",
       "typeVersion": 4.5,
-      "position": [1350, 200],
+      "position": [1570, 200],
       "credentials": { "googleSheetsOAuth2Api": { "id": "", "name": "Google Sheets" } }
     },
     {
@@ -131,7 +135,7 @@
       "name": "Read Equipment Sheet",
       "type": "n8n-nodes-base.googleSheets",
       "typeVersion": 4.5,
-      "position": [1570, 200],
+      "position": [1790, 200],
       "credentials": { "googleSheetsOAuth2Api": { "id": "", "name": "Google Sheets" } }
     },
     {
@@ -153,7 +157,7 @@
       "name": "Filter - หาอุปกรณ์ที่ตรงกัน",
       "type": "n8n-nodes-base.filter",
       "typeVersion": 2,
-      "position": [1790, 200]
+      "position": [2010, 200]
     },
     {
       "parameters": {
@@ -174,7 +178,7 @@
       "name": "Update Equipment - เพิ่มจำนวน",
       "type": "n8n-nodes-base.googleSheets",
       "typeVersion": 4.5,
-      "position": [2010, 200],
+      "position": [2230, 200],
       "credentials": { "googleSheetsOAuth2Api": { "id": "", "name": "Google Sheets" } }
     },
     {
@@ -188,7 +192,7 @@
       "name": "Send Email - ยืนยันคืน",
       "type": "n8n-nodes-base.gmail",
       "typeVersion": 2.1,
-      "position": [2230, 200],
+      "position": [2450, 200],
       "credentials": { "gmailOAuth2": { "id": "", "name": "Gmail" } }
     },
     {
@@ -207,7 +211,7 @@
       "name": "Respond - คืนสำเร็จ",
       "type": "n8n-nodes-base.respondToWebhook",
       "typeVersion": 1.1,
-      "position": [2450, 200]
+      "position": [2670, 200]
     },
     {
       "parameters": {
@@ -226,14 +230,15 @@
       "name": "Respond - ไม่เจอรหัสยืม",
       "type": "n8n-nodes-base.respondToWebhook",
       "typeVersion": 1.1,
-      "position": [1130, 420]
+      "position": [1350, 420]
     }
   ],
   "connections": {
     "Webhook - Return": { "main": [[{ "node": "Edit Fields - รับรหัสยืม", "type": "main", "index": 0 }]] },
     "Edit Fields - รับรหัสยืม": { "main": [[{ "node": "Read รายการยืม Sheet", "type": "main", "index": 0 }]] },
-    "Read รายการยืม Sheet": { "main": [[{ "node": "IF - เจอรหัสยืม + สถานะ=ยืมอยู่", "type": "main", "index": 0 }]] },
-    "IF - เจอรหัสยืม + สถานะ=ยืมอยู่": {
+    "Read รายการยืม Sheet": { "main": [[{ "node": "Code - ค้นหารายการยืม", "type": "main", "index": 0 }]] },
+    "Code - ค้นหารายการยืม": { "main": [[{ "node": "IF - พบรายการ?", "type": "main", "index": 0 }]] },
+    "IF - พบรายการ?": {
       "main": [
         [{ "node": "Save ข้อมูลผู้ยืม", "type": "main", "index": 0 }],
         [{ "node": "Respond - ไม่เจอรหัสยืม", "type": "main", "index": 0 }]
@@ -251,5 +256,5 @@
   "tags": [{ "name": "Equipment Lending" }],
   "triggerCount": 0,
   "updatedAt": "2026-04-10T00:00:00.000Z",
-  "versionId": "3"
+  "versionId": "4"
 }
