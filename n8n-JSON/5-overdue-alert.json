@@ -34,105 +34,55 @@
     },
     {
       "parameters": {
-        "conditions": {
-          "options": { "caseSensitive": true, "leftValue": "", "typeValidation": "strict" },
-          "conditions": [
-            {
-              "id": "status-check",
-              "leftValue": "={{ $json['สถานะ'] }}",
-              "rightValue": "ยืมอยู่",
-              "operator": { "type": "string", "operation": "equals" }
-            },
-            {
-              "id": "date-check",
-              "leftValue": "={{ $json['กำหนดคืน'] }}",
-              "rightValue": "={{ $now.format('yyyy-MM-dd') }}",
-              "operator": { "type": "string", "operation": "lt" }
-            }
-          ],
-          "combinator": "and"
-        }
+        "jsCode": "// หารายการที่เกินกำหนดคืน\nconst allItems = $input.all();\nconst today = new Date();\ntoday.setHours(0, 0, 0, 0);\n\nconst overdueItems = [];\n\nfor (const item of allItems) {\n  const status = item.json['สถานะ'];\n  const dueDate = item.json['กำหนดคืน'];\n  \n  if (status !== 'ยืมอยู่' || !dueDate || dueDate === '-') continue;\n  \n  const due = new Date(dueDate);\n  due.setHours(0, 0, 0, 0);\n  \n  if (due < today) {\n    overdueItems.push(item);\n  }\n}\n\nif (overdueItems.length === 0) {\n  // ไม่มีรายการเกินกำหนด — หยุด workflow\n  return [];\n}\n\nreturn overdueItems;"
       },
       "id": "filter-overdue",
-      "name": "Filter - เกินกำหนดคืน",
-      "type": "n8n-nodes-base.filter",
+      "name": "Code - หาเกินกำหนดคืน",
+      "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [690, 300]
     },
     {
       "parameters": {
-        "conditions": {
-          "options": { "caseSensitive": true, "leftValue": "", "typeValidation": "strict" },
-          "conditions": [
-            {
-              "id": "has-items",
-              "leftValue": "={{ $input.all().length }}",
-              "rightValue": "0",
-              "operator": { "type": "number", "operation": "gt" }
-            }
-          ],
-          "combinator": "and"
-        }
-      },
-      "id": "if-has-overdue",
-      "name": "IF - มีรายการเกินกำหนด",
-      "type": "n8n-nodes-base.if",
-      "typeVersion": 2,
-      "position": [910, 300]
-    },
-    {
-      "parameters": {
         "sendTo": "={{ $json.Email }}",
-        "subject": "=⚠️ แจ้งเตือน: อุปกรณ์เกินกำหนดคืน - {{ $json['รหัสยืม'] }}",
-        "message": "=สวัสดีคุณ {{ $json.ชื่อผู้ยืม }}\n\n⚠️ อุปกรณ์ที่คุณยืมเกินกำหนดคืนแล้ว!\n\n📋 รายละเอียด:\n- รหัสยืม: {{ $json['รหัสยืม'] }}\n- อุปกรณ์: {{ $json['อุปกรณ์'] }}\n- วันที่ยืม: {{ $json['วันที่ยืม'] }}\n- กำหนดคืน: {{ $json['กำหนดคืน'] }}\n\n❗ กรุณาคืนอุปกรณ์โดยเร็วที่สุด\n\nขอบคุณครับ/ค่ะ\nSmart Equipment Lending System",
+        "subject": "=⚠️ แจ้งเตือน: หนังสือเกินกำหนดคืน - {{ $json['รหัสยืม'] }}",
+        "emailType": "html",
+        "message": "=<div style='font-family: -apple-system, BlinkMacSystemFont, Segoe UI, Roboto, sans-serif; max-width: 600px; margin: 0 auto; background: #ffffff; border-radius: 12px; overflow: hidden; border: 1px solid #e5e7eb;'><div style='background: linear-gradient(135deg, #ff3b30, #ff6b6b); padding: 28px 32px; text-align: center;'><h1 style='color: #ffffff; margin: 0; font-size: 22px; font-weight: 700;'>⚠️ หนังสือเกินกำหนดคืน</h1></div><div style='padding: 28px 32px;'><p style='font-size: 16px; color: #1d1d1f; margin: 0 0 20px;'>สวัสดีคุณ <strong>{{ $json['ชื่อผู้ยืม'] }}</strong></p><p style='font-size: 14px; color: #6e6e73; margin: 0 0 24px;'>หนังสือที่คุณยืมเกินกำหนดคืนแล้ว กรุณาคืนโดยเร็วที่สุด</p><div style='background: #fff5f5; border-radius: 10px; padding: 20px; margin-bottom: 24px; border: 1px solid #fecaca;'><h3 style='margin: 0 0 14px; color: #1d1d1f; font-size: 14px;'>📋 รายละเอียด</h3><table style='width: 100%; border-collapse: collapse; font-size: 14px;'><tr><td style='padding: 8px 0; color: #6e6e73; width: 120px;'>รหัสยืม</td><td style='padding: 8px 0; color: #ff3b30; font-weight: 600;'>{{ $json['รหัสยืม'] }}</td></tr><tr><td style='padding: 8px 0; color: #6e6e73;'>หนังสือ</td><td style='padding: 8px 0; font-weight: 500;'>{{ $json['อุปกรณ์'] }}</td></tr><tr><td style='padding: 8px 0; color: #6e6e73;'>วันที่ยืม</td><td style='padding: 8px 0;'>{{ $json['วันที่ยืม'] }}</td></tr><tr><td style='padding: 8px 0; color: #6e6e73;'>กำหนดคืน</td><td style='padding: 8px 0; color: #ff3b30; font-weight: 700;'>{{ $json['กำหนดคืน'] }}</td></tr></table></div><div style='background: #fef3cd; border-radius: 8px; padding: 14px 16px;'><p style='margin: 0; font-size: 13px; color: #856404;'>❗ กรุณาคืนหนังสือโดยเร็วที่สุด หากมีข้อสงสัยกรุณาติดต่อเจ้าหน้าที่</p></div></div><div style='background: #f5f5f7; padding: 16px 32px; text-align: center; border-top: 1px solid #e5e7eb;'><p style='margin: 0; font-size: 12px; color: #8e8e93;'>Smart Lending System — ระบบยืม-คืนหนังสืออัตโนมัติ</p></div></div>",
         "options": {}
       },
       "id": "send-email-overdue",
       "name": "Send Email - เตือนผู้ยืม",
       "type": "n8n-nodes-base.gmail",
       "typeVersion": 2.1,
-      "position": [1130, 200],
+      "position": [910, 300],
       "credentials": { "gmailOAuth2": { "id": "", "name": "Gmail" } }
     },
     {
       "parameters": {
         "sendTo": "mrkoonking@gmail.com",
         "subject": "=📊 สรุปรายการเกินกำหนดคืน - {{ $now.format('yyyy-MM-dd') }}",
-        "message": "=รายงานสรุปรายการเกินกำหนดคืนประจำวัน\n\nวันที่: {{ $now.format('yyyy-MM-dd') }}\nจำนวนรายการเกินกำหนด: {{ $input.all().length }} รายการ\n\n📋 รายละเอียด:\n{{ $input.all().map(item => '- ' + item.json['รหัสยืม'] + ' | ' + item.json.ชื่อผู้ยืม + ' | ' + item.json['อุปกรณ์'] + ' | กำหนดคืน: ' + item.json['กำหนดคืน']).join('\\n') }}\n\n---\nSmart Equipment Lending System",
+        "emailType": "html",
+        "message": "=<div style='font-family: -apple-system, BlinkMacSystemFont, Segoe UI, Roboto, sans-serif; max-width: 600px; margin: 0 auto; background: #ffffff; border-radius: 12px; overflow: hidden; border: 1px solid #e5e7eb;'><div style='background: linear-gradient(135deg, #ff9500, #ffcc00); padding: 28px 32px; text-align: center;'><h1 style='color: #ffffff; margin: 0; font-size: 22px; font-weight: 700;'>📊 สรุปรายการเกินกำหนด</h1><p style='color: rgba(255,255,255,0.9); margin: 8px 0 0; font-size: 14px;'>{{ $now.format('yyyy-MM-dd') }}</p></div><div style='padding: 28px 32px;'><div style='background: #fff5f5; border-radius: 10px; padding: 16px; margin-bottom: 20px; text-align: center;'><span style='font-size: 32px; font-weight: 700; color: #ff3b30;'>{{ $input.all().length }}</span><br><span style='font-size: 13px; color: #6e6e73;'>รายการเกินกำหนด</span></div><table style='width: 100%; border-collapse: collapse; font-size: 13px;'><tr style='background: #f5f5f7;'><th style='padding: 10px 8px; text-align: left; font-weight: 600;'>รหัสยืม</th><th style='padding: 10px 8px; text-align: left; font-weight: 600;'>ผู้ยืม</th><th style='padding: 10px 8px; text-align: left; font-weight: 600;'>กำหนดคืน</th></tr>{{ $input.all().map(item => \"<tr><td style='padding: 8px; border-bottom: 1px solid #f0f0f0;'>\" + item.json['รหัสยืม'] + \"</td><td style='padding: 8px; border-bottom: 1px solid #f0f0f0;'>\" + item.json['ชื่อผู้ยืม'] + \"</td><td style='padding: 8px; border-bottom: 1px solid #f0f0f0; color: #ff3b30;'>\" + item.json['กำหนดคืน'] + \"</td></tr>\").join('') }}</table></div><div style='background: #f5f5f7; padding: 16px 32px; text-align: center; border-top: 1px solid #e5e7eb;'><p style='margin: 0; font-size: 12px; color: #8e8e93;'>Smart Lending System — ระบบยืม-คืนหนังสืออัตโนมัติ</p></div></div>",
         "options": {}
       },
       "id": "send-email-admin",
       "name": "Send Email - สรุปให้ Admin",
       "type": "n8n-nodes-base.gmail",
       "typeVersion": 2.1,
-      "position": [1350, 200],
+      "position": [1130, 300],
       "credentials": { "gmailOAuth2": { "id": "", "name": "Gmail" } }
-    },
-    {
-      "parameters": {},
-      "id": "no-operation",
-      "name": "No Operation",
-      "type": "n8n-nodes-base.noOp",
-      "typeVersion": 1,
-      "position": [1130, 420]
     }
   ],
   "connections": {
     "Schedule - ทุกวัน 8:00": { "main": [[{ "node": "Read รายการยืม Sheet", "type": "main", "index": 0 }]] },
-    "Read รายการยืม Sheet": { "main": [[{ "node": "Filter - เกินกำหนดคืน", "type": "main", "index": 0 }]] },
-    "Filter - เกินกำหนดคืน": { "main": [[{ "node": "IF - มีรายการเกินกำหนด", "type": "main", "index": 0 }]] },
-    "IF - มีรายการเกินกำหนด": {
-      "main": [
-        [{ "node": "Send Email - เตือนผู้ยืม", "type": "main", "index": 0 }],
-        [{ "node": "No Operation", "type": "main", "index": 0 }]
-      ]
-    },
+    "Read รายการยืม Sheet": { "main": [[{ "node": "Code - หาเกินกำหนดคืน", "type": "main", "index": 0 }]] },
+    "Code - หาเกินกำหนดคืน": { "main": [[{ "node": "Send Email - เตือนผู้ยืม", "type": "main", "index": 0 }]] },
     "Send Email - เตือนผู้ยืม": { "main": [[{ "node": "Send Email - สรุปให้ Admin", "type": "main", "index": 0 }]] }
   },
   "settings": { "executionOrder": "v1" },
   "staticData": null,
   "tags": [{ "name": "Equipment Lending" }],
   "triggerCount": 0,
-  "updatedAt": "2026-04-07T00:00:00.000Z",
-  "versionId": "1"
+  "updatedAt": "2026-04-10T00:00:00.000Z",
+  "versionId": "2"
 }
