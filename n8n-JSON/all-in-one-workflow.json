@@ -1,5 +1,5 @@
 {
-  "name": "5 - แจ้งเตือนเกินกำหนด (Overdue Alert)",
+  "name": "Equipment Lending - All-in-One",
   "nodes": [
     {
       "parameters": {
@@ -17,13 +17,13 @@
           }
         }
       },
-      "id": "b93eb7b6-f1cf-4d0c-84bc-ae5f9e6b83c0",
+      "id": "456299c1-0060-4725-8ca3-623f425aed9f",
       "name": "Webhook - Borrow",
       "type": "n8n-nodes-base.webhook",
       "typeVersion": 2,
       "position": [
-        -112,
-        -176
+        1072,
+        -320
       ],
       "webhookId": "borrow"
     },
@@ -71,13 +71,13 @@
         },
         "options": {}
       },
-      "id": "eaa765ab-7f72-46d4-9c04-9ebcf580c19c",
+      "id": "87b31a09-641a-4e82-bd32-6b3eab71e84a",
       "name": "Edit Fields - รับข้อมูลยืม",
       "type": "n8n-nodes-base.set",
       "typeVersion": 3.4,
       "position": [
-        112,
-        -176
+        1280,
+        -320
       ]
     },
     {
@@ -96,23 +96,15 @@
           "cachedResultName": "อุปกรณ์",
           "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1hLqygTmPd9iOV98btAtH2c9rnmxW2wQvXqMiKnhiTwk/edit#gid=0"
         },
-        "filtersUI": {
-          "values": [
-            {
-              "lookupColumn": "รหัสอุปกรณ์",
-              "lookupValue": "={{ $('Edit Fields - รับข้อมูลยืม').item.json.equipmentId }}"
-            }
-          ]
-        },
         "options": {}
       },
-      "id": "5be4ab4e-6932-4d51-b2cd-f024975f313a",
+      "id": "a8e66d81-7c21-41f3-9f20-9095fb6828ab",
       "name": "Read Equipment Sheet",
       "type": "n8n-nodes-base.googleSheets",
       "typeVersion": 4.5,
       "position": [
-        336,
-        -176
+        1504,
+        -320
       ],
       "credentials": {
         "googleSheetsOAuth2Api": {
@@ -120,6 +112,19 @@
           "name": "Google Sheets account"
         }
       }
+    },
+    {
+      "parameters": {
+        "jsCode": "const allEquipment = $input.all();\nconst equipmentId = $('Edit Fields - รับข้อมูลยืม').first().json.equipmentId;\n\nfor (const item of allEquipment) {\n  if (item.json['รหัสอุปกรณ์'] === equipmentId) {\n    const remaining = Number(item.json['จำนวนคงเหลือ'] || 0);\n    return [{\n      json: {\n        found: true,\n        hasStock: remaining > 0,\n        'รหัสอุปกรณ์': item.json['รหัสอุปกรณ์'],\n        'ชื่ออุปกรณ์': item.json['ชื่ออุปกรณ์'],\n        'จำนวนคงเหลือ': remaining,\n        'จำนวนทั้งหมด': Number(item.json['จำนวนทั้งหมด'] || 0)\n      }\n    }];\n  }\n}\nreturn [{ json: { found: false, hasStock: false } }];"
+      },
+      "id": "9f248b0b-191c-4ea5-aea4-6387e6df8b54",
+      "name": "Code - ค้นหาอุปกรณ์",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1728,
+        -320
+      ]
     },
     {
       "parameters": {
@@ -133,11 +138,11 @@
           "conditions": [
             {
               "id": "stock-check",
-              "leftValue": "={{ Number($json['จำนวนคงเหลือ']) }}",
-              "rightValue": 0,
+              "leftValue": "={{ $json.hasStock }}",
+              "rightValue": true,
               "operator": {
-                "type": "number",
-                "operation": "gt"
+                "type": "boolean",
+                "operation": "true"
               }
             }
           ],
@@ -145,42 +150,60 @@
         },
         "options": {}
       },
-      "id": "340aff2d-1b31-4613-8a8a-6dfdcd343a9a",
+      "id": "35b0c736-a8c6-4e62-a85b-b0469b9b8935",
       "name": "IF - ตรวจสอบสต็อก",
       "type": "n8n-nodes-base.if",
       "typeVersion": 2,
       "position": [
-        560,
-        -176
+        1952,
+        -320
       ]
     },
     {
       "parameters": {
-        "assignments": {
-          "assignments": [
-            {
-              "id": "borrowId",
-              "name": "borrowId",
-              "value": "=BR{{ $now.format('MMdd') }}{{ Math.random().toString(36).substring(2, 6).toUpperCase() }}",
-              "type": "string"
-            },
-            {
-              "id": "borrowDate",
-              "name": "borrowDate",
-              "value": "={{ $now.format('yyyy-MM-dd') }}",
-              "type": "string"
-            }
-          ]
+        "documentId": {
+          "__rl": true,
+          "value": "1hLqygTmPd9iOV98btAtH2c9rnmxW2wQvXqMiKnhiTwk",
+          "mode": "list",
+          "cachedResultName": "Smart Equipment Lending - Database",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1hLqygTmPd9iOV98btAtH2c9rnmxW2wQvXqMiKnhiTwk/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": 1747542314,
+          "mode": "list",
+          "cachedResultName": "รายการยืม",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1hLqygTmPd9iOV98btAtH2c9rnmxW2wQvXqMiKnhiTwk/edit#gid=1747542314"
         },
         "options": {}
       },
-      "id": "2ef571d7-cdf4-49c8-92e5-6192efbed42b",
-      "name": "สร้างรหัสยืม",
-      "type": "n8n-nodes-base.set",
-      "typeVersion": 3.4,
+      "id": "7a239d95-68db-4b71-8d5d-5eee9566105d",
+      "name": "Read รายการยืม - นับจำนวน",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.5,
       "position": [
-        768,
-        -272
+        2160,
+        -416
+      ],
+      "alwaysOutputData": false,
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "CA7OsxCOPdSikM1Y",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const allRecords = $input.all();\nconst now = new Date();\nconst year = now.getFullYear();\nconst month = String(now.getMonth() + 1).padStart(2, '0');\nconst day = String(now.getDate()).padStart(2, '0');\nlet maxNum = 0;\n\nfor (const item of allRecords) {\n  const id = item.json['รหัสยืม'] || '';\n  const match = id.match(/^BR\\d{4}-(\\d{5})$/);\n  if (match) {\n    const num = parseInt(match[1]);\n    if (num > maxNum) maxNum = num;\n  }\n}\n\nconst nextNum = maxNum + 1;\nconst borrowId = 'BR' + year + '-' + String(nextNum).padStart(5, '0');\n\nreturn [{\n  json: {\n    borrowId: borrowId,\n    borrowDate: year + '-' + month + '-' + day\n  }\n}];\n"
+      },
+      "id": "7cf79676-8c34-4e9e-8190-aa32f2505040",
+      "name": "สร้างรหัสยืม",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2384,
+        -416
       ]
     },
     {
@@ -302,13 +325,13 @@
         },
         "options": {}
       },
-      "id": "705217a7-12cb-427b-8d4c-799a21a81076",
+      "id": "1db7dfcc-1d27-4ed9-a4b3-a016a583786c",
       "name": "Append to รายการยืม",
       "type": "n8n-nodes-base.googleSheets",
       "typeVersion": 4.5,
       "position": [
-        992,
-        -272
+        2608,
+        -416
       ],
       "credentials": {
         "googleSheetsOAuth2Api": {
@@ -337,11 +360,12 @@
         "columns": {
           "mappingMode": "defineBelow",
           "value": {
-            "จำนวนคงเหลือ": "={{ Number($('Read Equipment Sheet').item.json['จำนวนคงเหลือ']) - 1 }}",
-            "row_number": "={{ $('Read Equipment Sheet').item.json.row_number }}"
+            "รหัสอุปกรณ์": "={{ $('Code - ค้นหาอุปกรณ์').item.json['รหัสอุปกรณ์'] }}",
+            "จำนวนคงเหลือ": "={{ $('Code - ค้นหาอุปกรณ์').item.json['จำนวนคงเหลือ'] - 1 }}",
+            "row_number": 0
           },
           "matchingColumns": [
-            "row_number"
+            "รหัสอุปกรณ์"
           ],
           "schema": [
             {
@@ -351,8 +375,7 @@
               "defaultMatch": false,
               "display": true,
               "type": "string",
-              "canBeUsedToMatch": true,
-              "removed": false
+              "canBeUsedToMatch": true
             },
             {
               "id": "ชื่ออุปกรณ์",
@@ -420,13 +443,13 @@
         },
         "options": {}
       },
-      "id": "79fd6559-77ee-4157-bada-613dd9adce85",
+      "id": "55a295f2-c646-43ca-b8a8-5586bbff4172",
       "name": "Update Equipment - ลดจำนวน",
       "type": "n8n-nodes-base.googleSheets",
       "typeVersion": 4.5,
       "position": [
-        1216,
-        -272
+        2832,
+        -416
       ],
       "credentials": {
         "googleSheetsOAuth2Api": {
@@ -438,19 +461,21 @@
     {
       "parameters": {
         "sendTo": "={{ $('Edit Fields - รับข้อมูลยืม').item.json.email }}",
-        "subject": "=✅ ยืนยันการยืมอุปกรณ์ - {{ $('สร้างรหัสยืม').item.json.borrowId }}",
-        "message": "=<div style=\"font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f4f7f6; padding: 40px; text-align: center;\">\n  <div style=\"background-color: #ffffff; max-width: 600px; margin: 0 auto; border-radius: 16px; overflow: hidden; box-shadow: 0 10px 30px rgba(0,0,0,0.05); text-align: left;\">\n    \n    <!-- แถบสีด้านบน -->\n    <div style=\"background: linear-gradient(135deg, #007aff 0%, #0056b3 100%); padding: 30px; text-align: center;\">\n      <h1 style=\"color: #ffffff; margin: 0; font-size: 24px; font-weight: 600;\">✅ ยืนยันการยืมสำเร็จ</h1>\n    </div>\n\n    <!-- เนื้อหาจดหมาย -->\n    <div style=\"padding: 40px 30px;\">\n      <p style=\"font-size: 16px; color: #333333; margin-top: 0;\">สวัสดีคุณ <strong>{{ $('Edit Fields - รับข้อมูลยืม').item.json.name }}</strong>,</p>\n      <p style=\"font-size: 15px; color: #555555; line-height: 1.6;\">คำขอยืมอุปกรณ์จากระบบ <strong>Smart Lending</strong> ได้รับการอนุมัติแล้ว นี่คือรายละเอียดของคุณ:</p>\n      \n      <!-- กล่องข้อมูลตีกรอบสวยๆ -->\n      <div style=\"background-color: #f8f9fc; border-left: 4px solid #007aff; padding: 20px; border-radius: 8px; margin: 25px 0;\">\n        <p style=\"margin: 0 0 10px 0; font-size: 14px;\"><span style=\"color: #666; display: inline-block; width: 100px;\">รหัสการยืม:</span> <strong style=\"color: #111;\">{{ $('สร้างรหัสยืม').item.json.borrowId }}</strong></p>\n        <p style=\"margin: 0 0 10px 0; font-size: 14px;\"><span style=\"color: #666; display: inline-block; width: 100px;\">อุปกรณ์:</span> <strong style=\"color: #111;\">{{ $('Edit Fields - รับข้อมูลยืม').item.json.equipmentId }}</strong></p>\n        <p style=\"margin: 0 0 10px 0; font-size: 14px;\"><span style=\"color: #666; display: inline-block; width: 100px;\">วันที่ยืม:</span> <strong style=\"color: #111;\">{{ $('สร้างรหัสยืม').item.json.borrowDate }}</strong></p>\n        <p style=\"margin: 0; font-size: 14px;\"><span style=\"color: #666; display: inline-block; width: 100px;\">กำหนดคืน:</span> <strong style=\"color: #e53e3e;\">{{ $('Edit Fields - รับข้อมูลยืม').item.json.returnDate }}</strong></p>\n      </div>\n\n      <p style=\"font-size: 14px; color: #888888; text-align: center; margin-top: 30px;\">⚠️ กรุณาส่งคืนอุปกรณ์ตรงตามเวลาที่กำหนด</p>\n    </div>\n\n    <!-- ส้นจดหมาย -->\n    <div style=\"background-color: #f8f9fa; padding: 20px; text-align: center; font-size: 12px; color: #aaaaaa; border-top: 1px solid #eeeeee;\">\n      อีเมลนี้ถูกส่งโดยอัตโนมัติจากระบบ โปรดอย่าตอบกลับ<br>\n      © 2026 Smart Equipment Lending System\n    </div>\n  </div>\n</div>\n",
-        "options": {}
+        "subject": "=📚 ยืนยันการยืมหนังสือ - {{ $('สร้างรหัสยืม').item.json.borrowId }}",
+        "message": "=<div style='font-family:sans-serif;max-width:600px;margin:0 auto;background:#fff;border-radius:12px;overflow:hidden;border:1px solid #e5e7eb'><div style='background-color:#007aff;padding:28px 32px;text-align:center'><h1 style='color:#fff;margin:0;font-size:22px'>📚 ยืนยันการยืมหนังสือ</h1></div><div style='padding:28px 32px'><p style='font-size:16px;color:#1d1d1f;margin:0 0 20px'>สวัสดีคุณ <strong>{{ $('Edit Fields - รับข้อมูลยืม').item.json.name }}</strong></p><div style='background:#f5f5f7;border-radius:10px;padding:20px;margin-bottom:24px'><table style='width:100%;font-size:14px'><tr><td style='padding:8px 0;color:#6e6e73'>รหัสยืม</td><td style='padding:8px 0;color:#007aff;font-weight:600'>{{ $('สร้างรหัสยืม').item.json.borrowId }}</td></tr><tr><td style='padding:8px 0;color:#6e6e73'>หนังสือ</td><td style='padding:8px 0'>{{ $('Code - ค้นหาอุปกรณ์').item.json['ชื่ออุปกรณ์'] }}</td></tr><tr><td style='padding:8px 0;color:#6e6e73'>วันที่ยืม</td><td style='padding:8px 0'>{{ $('สร้างรหัสยืม').item.json.borrowDate }}</td></tr><tr><td style='padding:8px 0;color:#6e6e73'>กำหนดคืน</td><td style='padding:8px 0;color:#ff3b30;font-weight:600'>{{ $('Edit Fields - รับข้อมูลยืม').item.json.returnDate }}</td></tr></table></div><div style='background:#fff3cd;border-radius:8px;padding:14px 16px'><p style='margin:0;font-size:13px;color:#856404'>⚠️ กรุณาคืนหนังสือภายในวันกำหนดคืน</p></div></div><div style='background:#f5f5f7;padding:16px 32px;text-align:center;border-top:1px solid #e5e7eb'><p style='margin:0;font-size:12px;color:#8e8e93'>Smart Lending System</p></div></div>",
+        "options": {
+          "appendAttribution": false
+        }
       },
-      "id": "c5af703a-527a-4526-bc42-98adb22e489d",
+      "id": "00570b4f-fbdd-44cd-afd8-23b4a5f0ed14",
       "name": "Send Email - ยืนยันยืม",
       "type": "n8n-nodes-base.gmail",
       "typeVersion": 2.1,
       "position": [
-        1440,
-        -272
+        3040,
+        -416
       ],
-      "webhookId": "73f0de5b-b108-40a3-a1cc-d169bebacdb5",
+      "webhookId": "ccc4c731-8a60-4ea0-b050-5b31e4d4f2a0",
       "credentials": {
         "gmailOAuth2": {
           "id": "Id6o5jh4IB1t2Knx",
@@ -473,13 +498,13 @@
           }
         }
       },
-      "id": "d658f1a0-5739-42c2-807d-0b1da24e5059",
+      "id": "3b422279-871e-473f-88f0-3599b22899bf",
       "name": "Respond - สำเร็จ",
       "type": "n8n-nodes-base.respondToWebhook",
       "typeVersion": 1.1,
       "position": [
-        1648,
-        -272
+        3264,
+        -416
       ]
     },
     {
@@ -498,268 +523,13 @@
           }
         }
       },
-      "id": "920644f3-516c-476f-9591-10431ffec875",
+      "id": "0aebc01f-bf1e-49d4-ab4f-b48a36b1f12a",
       "name": "Respond - อุปกรณ์หมด",
       "type": "n8n-nodes-base.respondToWebhook",
       "typeVersion": 1.1,
       "position": [
-        768,
-        -48
-      ]
-    },
-    {
-      "parameters": {
-        "path": "equipment",
-        "responseMode": "responseNode",
-        "options": {
-          "responseHeaders": {
-            "entries": [
-              {
-                "name": "Access-Control-Allow-Origin",
-                "value": "*"
-              }
-            ]
-          }
-        }
-      },
-      "id": "06d2b43b-4535-444c-8a38-8b939edc4b91",
-      "name": "Webhook - Get Equipment",
-      "type": "n8n-nodes-base.webhook",
-      "typeVersion": 2,
-      "position": [
-        1536,
-        528
-      ],
-      "webhookId": "equipment"
-    },
-    {
-      "parameters": {
-        "respondWith": "allIncomingItems",
-        "options": {
-          "responseHeaders": {
-            "entries": [
-              {
-                "name": "Access-Control-Allow-Origin",
-                "value": "*"
-              },
-              {
-                "name": "Content-Type",
-                "value": "application/json"
-              }
-            ]
-          }
-        }
-      },
-      "id": "ef82d8f1-76a0-49fb-b311-b2203a4d38a0",
-      "name": "Respond - รายการอุปกรณ์",
-      "type": "n8n-nodes-base.respondToWebhook",
-      "typeVersion": 1.1,
-      "position": [
-        1984,
-        528
-      ]
-    },
-    {
-      "parameters": {
-        "documentId": {
-          "__rl": true,
-          "value": "1hLqygTmPd9iOV98btAtH2c9rnmxW2wQvXqMiKnhiTwk",
-          "mode": "list",
-          "cachedResultName": "Smart Equipment Lending - Database",
-          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1hLqygTmPd9iOV98btAtH2c9rnmxW2wQvXqMiKnhiTwk/edit?usp=drivesdk"
-        },
-        "sheetName": {
-          "__rl": true,
-          "value": "gid=0",
-          "mode": "list",
-          "cachedResultName": "อุปกรณ์",
-          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1hLqygTmPd9iOV98btAtH2c9rnmxW2wQvXqMiKnhiTwk/edit#gid=0"
-        },
-        "options": {}
-      },
-      "id": "1e103480-2681-4e44-a11e-87ddb20d3ebe",
-      "name": "Read Equipment Sheet1",
-      "type": "n8n-nodes-base.googleSheets",
-      "typeVersion": 4.5,
-      "position": [
-        1760,
-        528
-      ],
-      "credentials": {
-        "googleSheetsOAuth2Api": {
-          "id": "CA7OsxCOPdSikM1Y",
-          "name": "Google Sheets account"
-        }
-      }
-    },
-    {
-      "parameters": {
-        "path": "borrow-history",
-        "responseMode": "responseNode",
-        "options": {
-          "responseHeaders": {
-            "entries": [
-              {
-                "name": "Access-Control-Allow-Origin",
-                "value": "*"
-              }
-            ]
-          }
-        }
-      },
-      "id": "e4b3387b-d2ee-49d3-81b3-d498da150b6a",
-      "name": "Webhook - Get History",
-      "type": "n8n-nodes-base.webhook",
-      "typeVersion": 2,
-      "position": [
-        1536,
-        704
-      ],
-      "webhookId": "borrow-history"
-    },
-    {
-      "parameters": {
-        "respondWith": "allIncomingItems",
-        "options": {
-          "responseHeaders": {
-            "entries": [
-              {
-                "name": "Access-Control-Allow-Origin",
-                "value": "*"
-              },
-              {
-                "name": "Content-Type",
-                "value": "application/json"
-              }
-            ]
-          }
-        }
-      },
-      "id": "b6bcc131-83f7-4f71-9ff4-73f1bb8cca9f",
-      "name": "Respond - ประวัติทั้งหมด",
-      "type": "n8n-nodes-base.respondToWebhook",
-      "typeVersion": 1.1,
-      "position": [
-        1984,
-        704
-      ]
-    },
-    {
-      "parameters": {
-        "documentId": {
-          "__rl": true,
-          "value": "1hLqygTmPd9iOV98btAtH2c9rnmxW2wQvXqMiKnhiTwk",
-          "mode": "list",
-          "cachedResultName": "Smart Equipment Lending - Database",
-          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1hLqygTmPd9iOV98btAtH2c9rnmxW2wQvXqMiKnhiTwk/edit?usp=drivesdk"
-        },
-        "sheetName": {
-          "__rl": true,
-          "value": 1747542314,
-          "mode": "list",
-          "cachedResultName": "รายการยืม",
-          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1hLqygTmPd9iOV98btAtH2c9rnmxW2wQvXqMiKnhiTwk/edit#gid=1747542314"
-        },
-        "options": {}
-      },
-      "id": "38909a01-8c9c-48a4-948a-896cc837cadf",
-      "name": "Read รายการยืม Sheet1",
-      "type": "n8n-nodes-base.googleSheets",
-      "typeVersion": 4.5,
-      "position": [
-        1760,
-        704
-      ],
-      "credentials": {
-        "googleSheetsOAuth2Api": {
-          "id": "CA7OsxCOPdSikM1Y",
-          "name": "Google Sheets account"
-        }
-      }
-    },
-    {
-      "parameters": {
-        "path": "students",
-        "responseMode": "responseNode",
-        "options": {
-          "responseHeaders": {
-            "entries": [
-              {
-                "name": "Access-Control-Allow-Origin",
-                "value": "*"
-              }
-            ]
-          }
-        }
-      },
-      "id": "e34c7759-cea6-404e-87f9-e9f28df15ab3",
-      "name": "Webhook - Get Students",
-      "type": "n8n-nodes-base.webhook",
-      "typeVersion": 2,
-      "position": [
-        1536,
-        352
-      ],
-      "webhookId": "students"
-    },
-    {
-      "parameters": {
-        "documentId": {
-          "__rl": true,
-          "value": "1hLqygTmPd9iOV98btAtH2c9rnmxW2wQvXqMiKnhiTwk",
-          "mode": "list",
-          "cachedResultName": "Smart Equipment Lending - Database",
-          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1hLqygTmPd9iOV98btAtH2c9rnmxW2wQvXqMiKnhiTwk/edit?usp=drivesdk"
-        },
-        "sheetName": {
-          "__rl": true,
-          "value": 1986220995,
-          "mode": "list",
-          "cachedResultName": "ผู้ใช้",
-          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1hLqygTmPd9iOV98btAtH2c9rnmxW2wQvXqMiKnhiTwk/edit#gid=1986220995"
-        },
-        "options": {}
-      },
-      "id": "9f33a746-a30e-4401-b625-3f041a2d858a",
-      "name": "Read Students Sheet",
-      "type": "n8n-nodes-base.googleSheets",
-      "typeVersion": 4.5,
-      "position": [
-        1760,
-        352
-      ],
-      "credentials": {
-        "googleSheetsOAuth2Api": {
-          "id": "CA7OsxCOPdSikM1Y",
-          "name": "Google Sheets account"
-        }
-      }
-    },
-    {
-      "parameters": {
-        "respondWith": "allIncomingItems",
-        "options": {
-          "responseHeaders": {
-            "entries": [
-              {
-                "name": "Access-Control-Allow-Origin",
-                "value": "*"
-              },
-              {
-                "name": "Content-Type",
-                "value": "application/json"
-              }
-            ]
-          }
-        }
-      },
-      "id": "400341a8-6c34-4bcf-a2d1-7b98440078be",
-      "name": "Respond - รายการนักศึกษา",
-      "type": "n8n-nodes-base.respondToWebhook",
-      "typeVersion": 1.1,
-      "position": [
-        1984,
-        352
+        2160,
+        -160
       ]
     },
     {
@@ -778,13 +548,13 @@
           }
         }
       },
-      "id": "3bf3c671-3d1a-4883-9900-63f08b89c1ca",
+      "id": "36968e51-ae42-4ebd-9400-90be0c6e771f",
       "name": "Webhook - Return",
       "type": "n8n-nodes-base.webhook",
       "typeVersion": 2,
       "position": [
-        -176,
-        208
+        1072,
+        96
       ],
       "webhookId": "return"
     },
@@ -802,13 +572,13 @@
         },
         "options": {}
       },
-      "id": "319044bf-521d-4c2a-8456-11864b093909",
+      "id": "d54d9a2a-f7a0-44d2-90eb-6f5e5012e55e",
       "name": "Edit Fields - รับรหัสยืม",
       "type": "n8n-nodes-base.set",
       "typeVersion": 3.4,
       "position": [
-        48,
-        208
+        1280,
+        96
       ]
     },
     {
@@ -829,13 +599,13 @@
         },
         "options": {}
       },
-      "id": "0ead2b54-167b-44f6-ba29-e94fa002ea27",
+      "id": "c6b9b38a-4537-402f-83af-2960029104a3",
       "name": "Read รายการยืม Sheet",
       "type": "n8n-nodes-base.googleSheets",
       "typeVersion": 4.5,
       "position": [
-        256,
-        208
+        1504,
+        96
       ],
       "credentials": {
         "googleSheetsOAuth2Api": {
@@ -846,15 +616,15 @@
     },
     {
       "parameters": {
-        "jsCode": "// ค้นหารายการยืมที่ตรงกับ borrowId + สถานะ = ยืมอยู่\nconst allItems = $input.all();\nconst borrowId = $('Edit Fields - รับรหัสยืม').first().json.borrowId;\n\nfor (const item of allItems) {\n  if (item.json['รหัสยืม'] === borrowId && item.json['สถานะ'] === 'ยืมอยู่') {\n    return [{\n      json: {\n        found: true,\n        รหัสยืม: item.json['รหัสยืม'],\n        ชื่อผู้ยืม: item.json['ชื่อผู้ยืม'],\n        Email: item.json['Email'],\n        อุปกรณ์: item.json['อุปกรณ์'],\n        'รหัสนศ.': item.json['รหัสนศ.'],\n        วันที่ยืม: item.json['วันที่ยืม'],\n        กำหนดคืน: item.json['กำหนดคืน'],\n        สถานะ: item.json['สถานะ']\n      }\n    }];\n  }\n}\n\n// ไม่พบรายการที่ตรงกัน\nreturn [{ json: { found: false } }];"
+        "jsCode": "const allItems = $input.all();\nconst borrowId = $('Edit Fields - รับรหัสยืม').first().json.borrowId;\n\nfor (const item of allItems) {\n  if (item.json['รหัสยืม'] === borrowId && (item.json['สถานะ'] === 'ยืมอยู่' || item.json['สถานะ'] === 'เกินกำหนด')) {\n    return [{\n      json: {\n        found: true,\n        'รหัสยืม': item.json['รหัสยืม'],\n        'ชื่อผู้ยืม': item.json['ชื่อผู้ยืม'],\n        Email: item.json['Email'],\n        'อุปกรณ์': item.json['อุปกรณ์'],\n        'รหัสนศ.': item.json['รหัสนศ.'],\n        'วันที่ยืม': item.json['วันที่ยืม'],\n        'กำหนดคืน': item.json['กำหนดคืน'],\n        'สถานะ': item.json['สถานะ']\n      }\n    }];\n  }\n}\nreturn [{ json: { found: false } }];"
       },
-      "id": "4b66673c-180a-4b14-b7c2-d15d01664a16",
+      "id": "086ef1f9-b55d-4a73-a9be-e138e1bd9a9f",
       "name": "Code - ค้นหารายการยืม",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        480,
-        208
+        1728,
+        96
       ]
     },
     {
@@ -880,13 +650,13 @@
         },
         "options": {}
       },
-      "id": "6ffb7304-ad10-4cfd-a55b-6151a1390d3c",
+      "id": "5fdf1b66-699a-4895-a97b-d25abc2c2cd8",
       "name": "IF - พบรายการ?",
       "type": "n8n-nodes-base.if",
       "typeVersion": 2,
       "position": [
-        704,
-        208
+        1952,
+        96
       ]
     },
     {
@@ -945,13 +715,13 @@
         },
         "options": {}
       },
-      "id": "8f12fb02-fa18-4427-a058-a1a959f3e10a",
+      "id": "069e04a5-e3e9-42a8-a83f-0aeb6e65d3f5",
       "name": "Save ข้อมูลผู้ยืม",
       "type": "n8n-nodes-base.set",
       "typeVersion": 3.4,
       "position": [
-        928,
-        96
+        2160,
+        -16
       ]
     },
     {
@@ -1087,13 +857,46 @@
         },
         "options": {}
       },
-      "id": "20cfe415-50fa-488a-bd91-1451850307bd",
+      "id": "a8354ac4-c898-4772-985e-c5981414af3c",
       "name": "Update รายการยืม - คืนแล้ว",
       "type": "n8n-nodes-base.googleSheets",
       "typeVersion": 4.5,
       "position": [
-        1152,
-        96
+        2384,
+        -16
+      ],
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "CA7OsxCOPdSikM1Y",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "value": "1hLqygTmPd9iOV98btAtH2c9rnmxW2wQvXqMiKnhiTwk",
+          "mode": "list",
+          "cachedResultName": "Smart Equipment Lending - Database",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1hLqygTmPd9iOV98btAtH2c9rnmxW2wQvXqMiKnhiTwk/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "อุปกรณ์",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1hLqygTmPd9iOV98btAtH2c9rnmxW2wQvXqMiKnhiTwk/edit#gid=0"
+        },
+        "options": {}
+      },
+      "id": "9b9950b9-4932-4d9e-a868-0b604ee331f1",
+      "name": "Read Equipment Sheet2",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.5,
+      "position": [
+        2608,
+        -16
       ],
       "credentials": {
         "googleSheetsOAuth2Api": {
@@ -1125,13 +928,13 @@
         },
         "options": {}
       },
-      "id": "3f22b824-c753-404f-8077-64136714de74",
+      "id": "3e7e915e-bf06-4397-90aa-7328341dd049",
       "name": "Filter - หาอุปกรณ์ที่ตรงกัน",
       "type": "n8n-nodes-base.filter",
       "typeVersion": 2,
       "position": [
-        1584,
-        96
+        2832,
+        -16
       ]
     },
     {
@@ -1237,13 +1040,13 @@
         },
         "options": {}
       },
-      "id": "e74447f6-45db-46af-be5c-1e4e5f98e7a0",
+      "id": "47748e40-8d80-42eb-97f4-e4e32f86d5e9",
       "name": "Update Equipment - เพิ่มจำนวน",
       "type": "n8n-nodes-base.googleSheets",
       "typeVersion": 4.5,
       "position": [
-        1808,
-        96
+        3040,
+        -16
       ],
       "credentials": {
         "googleSheetsOAuth2Api": {
@@ -1256,18 +1059,20 @@
       "parameters": {
         "sendTo": "={{ $('Save ข้อมูลผู้ยืม').item.json.savedEmail }}",
         "subject": "=✅ คืนหนังสือสำเร็จ - {{ $('Save ข้อมูลผู้ยืม').item.json.savedBorrowId }}",
-        "message": "=<div style=\"font-family: -apple-system, BlinkMacSystemFont, Segoe UI, Roboto, sans-serif; max-width: 600px; margin: 0 auto; background: #ffffff; border-radius: 12px; overflow: hidden; border: 1px solid #e5e7eb;\">\n  <div style=\"background: linear-gradient(135deg, #34c759, #30d158); padding: 28px 32px; text-align: center;\">\n    <h1 style=\"color: #ffffff; margin: 0; font-size: 22px; font-weight: 700;\">✅ คืนหนังสือสำเร็จ</h1>\n  </div>\n  <div style=\"padding: 28px 32px;\">\n    <p style=\"font-size: 16px; color: #1d1d1f; margin: 0 0 20px;\">สวัสดีคุณ <strong>{{ $('Save ข้อมูลผู้ยืม').item.json.savedName }}</strong></p>\n    <p style=\"font-size: 14px; color: #6e6e73; margin: 0 0 24px;\">คืนหนังสือเรียบร้อยแล้ว! ระบบได้อัปเดตสต็อกและบันทึกข้อมูลเข้าระบบแล้ว</p>\n    <div style=\"background: #f5f5f7; border-radius: 10px; padding: 20px; margin-bottom: 24px;\">\n      <h3 style=\"margin: 0 0 14px; color: #1d1d1f; font-size: 14px;\">📋 รายละเอียดการคืน</h3>\n      <table style=\"width: 100%; border-collapse: collapse; font-size: 14px;\">\n        <tr>\n          <td style=\"padding: 8px 0; color: #6e6e73; width: 120px;\">รหัสยืม</td>\n          <td style=\"padding: 8px 0; color: #007aff; font-weight: 600;\">{{ $('Save ข้อมูลผู้ยืม').item.json.savedBorrowId }}</td>\n        </tr>\n        <tr>\n          <td style=\"padding: 8px 0; color: #6e6e73;\">รหัสอุปกรณ์</td>\n          <td style=\"padding: 8px 0; font-weight: 500;\">{{ $('Save ข้อมูลผู้ยืม').item.json.savedEquipmentId }}</td>\n        </tr>\n        <tr>\n          <td style=\"padding: 8px 0; color: #6e6e73;\">หนังสือ</td>\n          <td style=\"padding: 8px 0; font-weight: 500;\">{{ $json['ชื่ออุปกรณ์'] }}</td>\n        </tr>\n        <tr>\n          <td style=\"padding: 8px 0; color: #6e6e73;\">วันที่คืน</td>\n          <td style=\"padding: 8px 0; font-weight: 500;\">{{ $now.format('yyyy-MM-dd') }}</td>\n        </tr>\n      </table>\n    </div>\n    <p style=\"font-size: 13px; color: #6e6e73; margin: 0;\">ขอบคุณที่ใช้บริการ 📚</p>\n  </div>\n  <div style=\"background: #f5f5f7; padding: 16px 32px; text-align: center; border-top: 1px solid #e5e7eb;\">\n    <p style=\"margin: 0; font-size: 12px; color: #8e8e93;\">Smart Lending System — ระบบยืม-คืนหนังสืออัตโนมัติ</p>\n  </div>\n</div>",
-        "options": {}
+        "message": "=<div style='font-family:sans-serif;max-width:600px;margin:0 auto;background:#fff;border-radius:12px;overflow:hidden;border:1px solid #e5e7eb'><div style='background-color:#34c759;padding:28px 32px;text-align:center'><h1 style='color:#fff;margin:0;font-size:22px'>✅ คืนหนังสือสำเร็จ</h1></div><div style='padding:28px 32px'><p style='font-size:16px;color:#1d1d1f;margin:0 0 20px'>สวัสดีคุณ <strong>{{ $('Save ข้อมูลผู้ยืม').item.json.savedName }}</strong></p><div style='background:#f5f5f7;border-radius:10px;padding:20px;margin-bottom:24px'><table style='width:100%;font-size:14px'><tr><td style='padding:8px 0;color:#6e6e73'>รหัสยืม</td><td style='padding:8px 0;color:#007aff;font-weight:600'>{{ $('Save ข้อมูลผู้ยืม').item.json.savedBorrowId }}</td></tr><tr><td style='padding:8px 0;color:#6e6e73'>หนังสือ</td><td style='padding:8px 0'>{{ $('Filter - หาอุปกรณ์ที่ตรงกัน').item.json['ชื่ออุปกรณ์'] }}</td></tr><tr><td style='padding:8px 0;color:#6e6e73'>วันที่คืน</td><td style='padding:8px 0'>{{ $now.format('yyyy-MM-dd') }}</td></tr></table></div></div><div style='background:#f5f5f7;padding:16px 32px;text-align:center;border-top:1px solid #e5e7eb'><p style='margin:0;font-size:12px;color:#8e8e93'>Smart Lending System</p></div></div>",
+        "options": {
+          "appendAttribution": false
+        }
       },
-      "id": "3741237a-8eb2-4c14-ade2-ee98cbf2e059",
+      "id": "3bf7978a-aab5-4bf4-bd0a-2083653eeeb4",
       "name": "Send Email - ยืนยันคืน",
       "type": "n8n-nodes-base.gmail",
       "typeVersion": 2.1,
       "position": [
-        2032,
-        96
+        3264,
+        -16
       ],
-      "webhookId": "01d2c422-8bc3-4228-a204-1337c8a89ef3",
+      "webhookId": "cf333678-9195-4e7f-8789-85346a985797",
       "credentials": {
         "gmailOAuth2": {
           "id": "Id6o5jh4IB1t2Knx",
@@ -1290,13 +1095,13 @@
           }
         }
       },
-      "id": "dfea477e-b3ea-4e82-b100-a743d6754b39",
+      "id": "0673c0a2-65d2-4379-9f7f-e6f2d503a9da",
       "name": "Respond - คืนสำเร็จ",
       "type": "n8n-nodes-base.respondToWebhook",
       "typeVersion": 1.1,
       "position": [
-        2256,
-        96
+        3488,
+        -16
       ]
     },
     {
@@ -1315,14 +1120,39 @@
           }
         }
       },
-      "id": "425da58b-49db-4de7-86b4-bb15845628b8",
+      "id": "5fedb779-2794-47bc-ac85-a383a78cf471",
       "name": "Respond - ไม่เจอรหัสยืม",
       "type": "n8n-nodes-base.respondToWebhook",
       "typeVersion": 1.1,
       "position": [
-        928,
-        320
+        2160,
+        240
       ]
+    },
+    {
+      "parameters": {
+        "path": "equipment",
+        "responseMode": "responseNode",
+        "options": {
+          "responseHeaders": {
+            "entries": [
+              {
+                "name": "Access-Control-Allow-Origin",
+                "value": "*"
+              }
+            ]
+          }
+        }
+      },
+      "id": "4cc28ae6-7549-479c-837d-bb5132cc4587",
+      "name": "Webhook - Get Equipment",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        1072,
+        496
+      ],
+      "webhookId": "equipment"
     },
     {
       "parameters": {
@@ -1342,13 +1172,13 @@
         },
         "options": {}
       },
-      "id": "1113424c-460a-4949-84f5-5f997e6c587d",
-      "name": "Read Equipment Sheet2",
+      "id": "dc11d479-aaf5-4ee0-a940-7e129324c981",
+      "name": "Read Equipment Sheet1",
       "type": "n8n-nodes-base.googleSheets",
       "typeVersion": 4.5,
       "position": [
-        1376,
-        96
+        1280,
+        496
       ],
       "credentials": {
         "googleSheetsOAuth2Api": {
@@ -1359,81 +1189,140 @@
     },
     {
       "parameters": {
-        "rule": {
-          "interval": [
-            {
-              "triggerAtHour": 8
-            }
-          ]
+        "respondWith": "allIncomingItems",
+        "options": {
+          "responseHeaders": {
+            "entries": [
+              {
+                "name": "Access-Control-Allow-Origin",
+                "value": "*"
+              },
+              {
+                "name": "Content-Type",
+                "value": "application/json"
+              }
+            ]
+          }
         }
       },
-      "id": "fb9a68a5-6cca-4737-8f3b-d4832e8930d7",
-      "name": "Schedule - ทุกวัน 8:00",
-      "type": "n8n-nodes-base.scheduleTrigger",
-      "typeVersion": 1.2,
+      "id": "e485e2a7-ff85-4391-920c-1ac72b58e66d",
+      "name": "Respond - รายการอุปกรณ์",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
       "position": [
-        16,
-        544
+        1504,
+        496
       ]
     },
     {
       "parameters": {
-        "jsCode": "// หารายการที่เกินกำหนดคืน\nconst allItems = $input.all();\nconst today = new Date();\ntoday.setHours(0, 0, 0, 0);\n\nconst overdueItems = [];\n\nfor (const item of allItems) {\n  const status = item.json['สถานะ'];\n  const dueDate = item.json['กำหนดคืน'];\n  \n  if (status !== 'ยืมอยู่' || !dueDate || dueDate === '-') continue;\n  \n  const due = new Date(dueDate);\n  due.setHours(0, 0, 0, 0);\n  \n  if (due < today) {\n    overdueItems.push(item);\n  }\n}\n\nif (overdueItems.length === 0) {\n  // ไม่มีรายการเกินกำหนด — หยุด workflow\n  return [];\n}\n\nreturn overdueItems;"
+        "path": "students",
+        "responseMode": "responseNode",
+        "options": {
+          "responseHeaders": {
+            "entries": [
+              {
+                "name": "Access-Control-Allow-Origin",
+                "value": "*"
+              }
+            ]
+          }
+        }
       },
-      "id": "27615b24-3fa8-48ab-851c-6010179e4127",
-      "name": "Code - หาเกินกำหนดคืน",
-      "type": "n8n-nodes-base.code",
+      "id": "11e547f7-e851-4141-a413-7c2a42ede919",
+      "name": "Webhook - Get Students",
+      "type": "n8n-nodes-base.webhook",
       "typeVersion": 2,
       "position": [
-        464,
-        544
+        1072,
+        688
+      ],
+      "webhookId": "students"
+    },
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "value": "1hLqygTmPd9iOV98btAtH2c9rnmxW2wQvXqMiKnhiTwk",
+          "mode": "list",
+          "cachedResultName": "Smart Equipment Lending - Database",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1hLqygTmPd9iOV98btAtH2c9rnmxW2wQvXqMiKnhiTwk/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": 1986220995,
+          "mode": "list",
+          "cachedResultName": "ผู้ใช้",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1hLqygTmPd9iOV98btAtH2c9rnmxW2wQvXqMiKnhiTwk/edit#gid=1986220995"
+        },
+        "options": {}
+      },
+      "id": "116f8cb5-3b01-40ef-b58b-f4b7d72b6a37",
+      "name": "Read Students Sheet",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.5,
+      "position": [
+        1280,
+        688
+      ],
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "CA7OsxCOPdSikM1Y",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "respondWith": "allIncomingItems",
+        "options": {
+          "responseHeaders": {
+            "entries": [
+              {
+                "name": "Access-Control-Allow-Origin",
+                "value": "*"
+              },
+              {
+                "name": "Content-Type",
+                "value": "application/json"
+              }
+            ]
+          }
+        }
+      },
+      "id": "d7102ff8-c736-4f26-9094-5d90cb353283",
+      "name": "Respond - รายการนักศึกษา",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [
+        1504,
+        688
       ]
     },
     {
       "parameters": {
-        "sendTo": "={{ $json.Email }}",
-        "subject": "=⚠️ แจ้งเตือน: หนังสือเกินกำหนดคืน - {{ $json['รหัสยืม'] }}",
-        "message": "=<div style='font-family: -apple-system, BlinkMacSystemFont, Segoe UI, Roboto, sans-serif; max-width: 600px; margin: 0 auto; background: #ffffff; border-radius: 12px; overflow: hidden; border: 1px solid #e5e7eb;'><div style='background: linear-gradient(135deg, #ff3b30, #ff6b6b); padding: 28px 32px; text-align: center;'><h1 style='color: #ffffff; margin: 0; font-size: 22px; font-weight: 700;'>⚠️ หนังสือเกินกำหนดคืน</h1></div><div style='padding: 28px 32px;'><p style='font-size: 16px; color: #1d1d1f; margin: 0 0 20px;'>สวัสดีคุณ <strong>{{ $json['ชื่อผู้ยืม'] }}</strong></p><p style='font-size: 14px; color: #6e6e73; margin: 0 0 24px;'>หนังสือที่คุณยืมเกินกำหนดคืนแล้ว กรุณาคืนโดยเร็วที่สุด</p><div style='background: #fff5f5; border-radius: 10px; padding: 20px; margin-bottom: 24px; border: 1px solid #fecaca;'><h3 style='margin: 0 0 14px; color: #1d1d1f; font-size: 14px;'>📋 รายละเอียด</h3><table style='width: 100%; border-collapse: collapse; font-size: 14px;'><tr><td style='padding: 8px 0; color: #6e6e73; width: 120px;'>รหัสยืม</td><td style='padding: 8px 0; color: #ff3b30; font-weight: 600;'>{{ $json['รหัสยืม'] }}</td></tr><tr><td style='padding: 8px 0; color: #6e6e73;'>หนังสือ</td><td style='padding: 8px 0; font-weight: 500;'>{{ $json['อุปกรณ์'] }}</td></tr><tr><td style='padding: 8px 0; color: #6e6e73;'>วันที่ยืม</td><td style='padding: 8px 0;'>{{ $json['วันที่ยืม'] }}</td></tr><tr><td style='padding: 8px 0; color: #6e6e73;'>กำหนดคืน</td><td style='padding: 8px 0; color: #ff3b30; font-weight: 700;'>{{ $json['กำหนดคืน'] }}</td></tr></table></div><div style='background: #fef3cd; border-radius: 8px; padding: 14px 16px;'><p style='margin: 0; font-size: 13px; color: #856404;'>❗ กรุณาคืนหนังสือโดยเร็วที่สุด หากมีข้อสงสัยกรุณาติดต่อเจ้าหน้าที่</p></div></div><div style='background: #f5f5f7; padding: 16px 32px; text-align: center; border-top: 1px solid #e5e7eb;'><p style='margin: 0; font-size: 12px; color: #8e8e93;'>Smart Lending System — ระบบยืม-คืนหนังสืออัตโนมัติ</p></div></div>",
-        "options": {}
-      },
-      "id": "07e2007f-fab7-472e-98e5-a9a358120fd0",
-      "name": "Send Email - เตือนผู้ยืม",
-      "type": "n8n-nodes-base.gmail",
-      "typeVersion": 2.1,
-      "position": [
-        688,
-        544
-      ],
-      "webhookId": "0c75cad9-23a9-4303-a590-a4458c73db24",
-      "credentials": {
-        "gmailOAuth2": {
-          "id": "Id6o5jh4IB1t2Knx",
-          "name": "Gmail account"
+        "path": "borrow-history",
+        "responseMode": "responseNode",
+        "options": {
+          "responseHeaders": {
+            "entries": [
+              {
+                "name": "Access-Control-Allow-Origin",
+                "value": "*"
+              }
+            ]
+          }
         }
-      }
-    },
-    {
-      "parameters": {
-        "sendTo": "mrkoonking@gmail.com",
-        "subject": "=📊 สรุปรายการเกินกำหนดคืน - {{ $now.format('yyyy-MM-dd') }}",
-        "message": "=<div style='font-family: -apple-system, BlinkMacSystemFont, Segoe UI, Roboto, sans-serif; max-width: 600px; margin: 0 auto; background: #ffffff; border-radius: 12px; overflow: hidden; border: 1px solid #e5e7eb;'><div style='background: linear-gradient(135deg, #ff9500, #ffcc00); padding: 28px 32px; text-align: center;'><h1 style='color: #ffffff; margin: 0; font-size: 22px; font-weight: 700;'>📊 สรุปรายการเกินกำหนด</h1><p style='color: rgba(255,255,255,0.9); margin: 8px 0 0; font-size: 14px;'>{{ $now.format('yyyy-MM-dd') }}</p></div><div style='padding: 28px 32px;'><div style='background: #fff5f5; border-radius: 10px; padding: 16px; margin-bottom: 20px; text-align: center;'><span style='font-size: 32px; font-weight: 700; color: #ff3b30;'>{{ $('Code - หาเกินกำหนดคืน').all().length }}</span><br><span style='font-size: 13px; color: #6e6e73;'>รายการเกินกำหนด</span></div><table style='width: 100%; border-collapse: collapse; font-size: 13px;'><tr style='background: #f5f5f7;'><th style='padding: 10px 8px; text-align: left; font-weight: 600;'>รหัสยืม</th><th style='padding: 10px 8px; text-align: left; font-weight: 600;'>ผู้ยืม</th><th style='padding: 10px 8px; text-align: left; font-weight: 600;'>กำหนดคืน</th></tr>{{ $('Code - หาเกินกำหนดคืน').all().map(item => \"<tr><td style='padding: 8px; border-bottom: 1px solid #f0f0f0;'>\" + item.json['รหัสยืม'] + \"</td><td style='padding: 8px; border-bottom: 1px solid #f0f0f0;'>\" + item.json['ชื่อผู้ยืม'] + \"</td><td style='padding: 8px; border-bottom: 1px solid #f0f0f0; color: #ff3b30;'>\" + item.json['กำหนดคืน'] + \"</td></tr>\").join('') }}</table></div><div style='background: #f5f5f7; padding: 16px 32px; text-align: center; border-top: 1px solid #e5e7eb;'><p style='margin: 0; font-size: 12px; color: #8e8e93;'>Smart Lending System — ระบบยืม-คืนหนังสืออัตโนมัติ</p></div></div>",
-        "options": {}
       },
-      "id": "953a2222-d904-4a64-91a5-8317cf8b863c",
-      "name": "Send Email - สรุปให้ Admin",
-      "type": "n8n-nodes-base.gmail",
-      "typeVersion": 2.1,
+      "id": "7da456a9-880e-4aa4-86e6-5597b3d78d8b",
+      "name": "Webhook - Get History",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
       "position": [
-        896,
-        544
+        1072,
+        896
       ],
-      "webhookId": "25988f72-df6d-4803-91fe-13b84ab9f6c0",
-      "credentials": {
-        "gmailOAuth2": {
-          "id": "Id6o5jh4IB1t2Knx",
-          "name": "Gmail account"
-        }
-      }
+      "webhookId": "borrow-history"
     },
     {
       "parameters": {
@@ -1453,18 +1342,160 @@
         },
         "options": {}
       },
-      "id": "2f782761-bb4b-4b8c-a11e-bca552049003",
-      "name": "Read รายการยืม Sheet2",
+      "id": "e12a4f1c-2231-4ec5-8348-79783d00db13",
+      "name": "Read รายการยืม Sheet1",
       "type": "n8n-nodes-base.googleSheets",
       "typeVersion": 4.5,
       "position": [
-        240,
-        544
+        1280,
+        896
       ],
       "credentials": {
         "googleSheetsOAuth2Api": {
           "id": "CA7OsxCOPdSikM1Y",
           "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "respondWith": "allIncomingItems",
+        "options": {
+          "responseHeaders": {
+            "entries": [
+              {
+                "name": "Access-Control-Allow-Origin",
+                "value": "*"
+              },
+              {
+                "name": "Content-Type",
+                "value": "application/json"
+              }
+            ]
+          }
+        }
+      },
+      "id": "a3ba1584-70d9-4e94-a80e-df6912740ecc",
+      "name": "Respond - ประวัติทั้งหมด",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [
+        1504,
+        896
+      ]
+    },
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "triggerAtHour": 8
+            }
+          ]
+        }
+      },
+      "id": "33f473fc-96a5-4838-a9ed-3d95d88fbd09",
+      "name": "Schedule - ทุกวัน 8:00",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        2160,
+        496
+      ]
+    },
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "value": "1hLqygTmPd9iOV98btAtH2c9rnmxW2wQvXqMiKnhiTwk",
+          "mode": "list",
+          "cachedResultName": "Smart Equipment Lending - Database",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1hLqygTmPd9iOV98btAtH2c9rnmxW2wQvXqMiKnhiTwk/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": 1747542314,
+          "mode": "list",
+          "cachedResultName": "รายการยืม",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1hLqygTmPd9iOV98btAtH2c9rnmxW2wQvXqMiKnhiTwk/edit#gid=1747542314"
+        },
+        "options": {}
+      },
+      "id": "4e086c60-9394-4475-853e-a338a5f92876",
+      "name": "Read รายการยืม Sheet3",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.5,
+      "position": [
+        2384,
+        496
+      ],
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "CA7OsxCOPdSikM1Y",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const allItems = $input.all();\nconst today = new Date();\ntoday.setHours(0, 0, 0, 0);\n\nconst overdueItems = [];\n\nfor (const item of allItems) {\n  const status = item.json['สถานะ'];\n  const dueDate = item.json['กำหนดคืน'];\n  \n  if (status !== 'ยืมอยู่' || !dueDate || dueDate === '-') continue;\n  \n  const due = new Date(dueDate);\n  due.setHours(0, 0, 0, 0);\n  \n  if (due < today) {\n    overdueItems.push(item);\n  }\n}\n\nif (overdueItems.length === 0) {\n  return [];\n}\n\nreturn overdueItems;"
+      },
+      "id": "95316d26-d67d-4d88-b5a0-aa177217b09d",
+      "name": "Code - หาเกินกำหนดคืน",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2608,
+        496
+      ]
+    },
+    {
+      "parameters": {
+        "sendTo": "={{ $json.Email }}",
+        "subject": "=⚠️ แจ้งเตือน: หนังสือเกินกำหนดคืน - {{ $json['รหัสยืม'] }}",
+        "message": "=<div style='font-family:sans-serif;max-width:600px;margin:0 auto;background:#fff;border-radius:12px;overflow:hidden;border:1px solid #e5e7eb'><div style='background-color:#ff3b30;padding:28px 32px;text-align:center'><h1 style='color:#fff;margin:0;font-size:22px'>⚠️ หนังสือเกินกำหนดคืน</h1></div><div style='padding:28px 32px'><p style='font-size:16px;color:#1d1d1f;margin:0 0 20px'>สวัสดีคุณ <strong>{{ $json['ชื่อผู้ยืม'] }}</strong></p><p style='color:#6e6e73;margin:0 0 20px'>หนังสือที่คุณยืมเกินกำหนดคืนแล้ว กรุณาคืนโดยเร็ว</p><div style='background:#fff5f5;border-radius:10px;padding:20px;margin-bottom:24px;border:1px solid #fecaca'><table style='width:100%;font-size:14px'><tr><td style='padding:8px 0;color:#6e6e73'>รหัสยืม</td><td style='padding:8px 0;color:#ff3b30;font-weight:600'>{{ $json['รหัสยืม'] }}</td></tr><tr><td style='padding:8px 0;color:#6e6e73'>หนังสือ</td><td style='padding:8px 0'>{{ $json['อุปกรณ์'] }}</td></tr><tr><td style='padding:8px 0;color:#6e6e73'>กำหนดคืน</td><td style='padding:8px 0;color:#ff3b30;font-weight:700'>{{ $json['กำหนดคืน'] }}</td></tr></table></div></div><div style='background:#f5f5f7;padding:16px 32px;text-align:center;border-top:1px solid #e5e7eb'><p style='margin:0;font-size:12px;color:#8e8e93'>Smart Lending System</p></div></div>",
+        "options": {
+          "appendAttribution": false
+        }
+      },
+      "id": "83f6c0ac-974d-4c9b-a5a8-29d332fb2843",
+      "name": "Send Email - เตือนผู้ยืม",
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.1,
+      "position": [
+        2832,
+        496
+      ],
+      "webhookId": "12ebef04-1c45-4dd9-a722-98e7ea5ce3b6",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "Id6o5jh4IB1t2Knx",
+          "name": "Gmail account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "sendTo": "mrkoonking@gmail.com",
+        "subject": "=📊 สรุปรายการเกินกำหนดคืน - {{ $now.format('yyyy-MM-dd') }}",
+        "message": "=<div style='font-family:sans-serif;max-width:600px;margin:0 auto;background:#fff;border-radius:12px;overflow:hidden;border:1px solid #e5e7eb'><div style='background-color:#ff9500;padding:28px 32px;text-align:center'><h1 style='color:#fff;margin:0;font-size:22px'>📊 รายงานสรุปเกินกำหนด</h1><p style='color:rgba(255,255,255,0.9);margin:8px 0 0;font-size:14px'>{{ $now.format('yyyy-MM-dd') }}</p></div><div style='padding:28px 32px'><p style='font-size:16px;color:#1d1d1f;margin:0 0 20px'><strong>สรุปรายการเกินกำหนดคืน</strong></p><div style='background:#fff5f5;border-radius:10px;padding:16px;margin-bottom:20px;text-align:center'><span style='font-size:32px;font-weight:700;color:#ff3b30'>{{ $('Code - หาเกินกำหนดคืน').all().length }}</span><br><span style='font-size:13px;color:#6e6e73'>รายการเกินกำหนดทั้งหมด</span></div><table style='width:100%;border-collapse:collapse;font-size:13px;margin-bottom:20px'><tr style='background:#f9fafb'><th style='padding:10px 8px;text-align:left;border-bottom:2px solid #e5e7eb;color:#6e6e73'>รหัสยืม</th><th style='padding:10px 8px;text-align:left;border-bottom:2px solid #e5e7eb;color:#6e6e73'>รหัสนศ.</th><th style='padding:10px 8px;text-align:left;border-bottom:2px solid #e5e7eb;color:#6e6e73'>ชื่อผู้ยืม</th><th style='padding:10px 8px;text-align:left;border-bottom:2px solid #e5e7eb;color:#6e6e73'>อุปกรณ์</th><th style='padding:10px 8px;text-align:left;border-bottom:2px solid #e5e7eb;color:#6e6e73'>กำหนดคืน</th></tr>{{ $('Code - หาเกินกำหนดคืน').all().map(item => \"<tr><td style='padding:8px;border-bottom:1px solid #f3f4f6;color:#ff3b30;font-weight:600'>\" + item.json['รหัสยืม'] + \"</td><td style='padding:8px;border-bottom:1px solid #f3f4f6'>\" + item.json['รหัสนศ.'] + \"</td><td style='padding:8px;border-bottom:1px solid #f3f4f6'>\" + item.json['ชื่อผู้ยืม'] + \"</td><td style='padding:8px;border-bottom:1px solid #f3f4f6'>\" + item.json['อุปกรณ์'] + \"</td><td style='padding:8px;border-bottom:1px solid #f3f4f6;color:#ff3b30;font-weight:600'>\" + item.json['กำหนดคืน'] + \"</td></tr>\").join('') }}</table></div><div style='background:#f5f5f7;padding:16px 32px;text-align:center;border-top:1px solid #e5e7eb'><p style='margin:0;font-size:12px;color:#8e8e93'>Smart Lending System</p></div></div>",
+        "options": {
+          "appendAttribution": false
+        }
+      },
+      "id": "6c723d65-4b17-435d-a749-b025b1483e52",
+      "name": "Send Email - สรุปให้ Admin1",
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.1,
+      "position": [
+        3040,
+        496
+      ],
+      "webhookId": "7952b28a-863a-4d16-86b0-f1c75c83f27e",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "Id6o5jh4IB1t2Knx",
+          "name": "Gmail account"
         }
       }
     }
@@ -1497,6 +1528,17 @@
       "main": [
         [
           {
+            "node": "Code - ค้นหาอุปกรณ์",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code - ค้นหาอุปกรณ์": {
+      "main": [
+        [
+          {
             "node": "IF - ตรวจสอบสต็อก",
             "type": "main",
             "index": 0
@@ -1508,7 +1550,7 @@
       "main": [
         [
           {
-            "node": "สร้างรหัสยืม",
+            "node": "Read รายการยืม - นับจำนวน",
             "type": "main",
             "index": 0
           }
@@ -1516,6 +1558,17 @@
         [
           {
             "node": "Respond - อุปกรณ์หมด",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read รายการยืม - นับจำนวน": {
+      "main": [
+        [
+          {
+            "node": "สร้างรหัสยืม",
             "type": "main",
             "index": 0
           }
@@ -1560,72 +1613,6 @@
         [
           {
             "node": "Respond - สำเร็จ",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Webhook - Get Equipment": {
-      "main": [
-        [
-          {
-            "node": "Read Equipment Sheet1",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Read Equipment Sheet1": {
-      "main": [
-        [
-          {
-            "node": "Respond - รายการอุปกรณ์",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Webhook - Get History": {
-      "main": [
-        [
-          {
-            "node": "Read รายการยืม Sheet1",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Read รายการยืม Sheet1": {
-      "main": [
-        [
-          {
-            "node": "Respond - ประวัติทั้งหมด",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Webhook - Get Students": {
-      "main": [
-        [
-          {
-            "node": "Read Students Sheet",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Read Students Sheet": {
-      "main": [
-        [
-          {
-            "node": "Respond - รายการนักศึกษา",
             "type": "main",
             "index": 0
           }
@@ -1716,6 +1703,17 @@
         ]
       ]
     },
+    "Read Equipment Sheet2": {
+      "main": [
+        [
+          {
+            "node": "Filter - หาอุปกรณ์ที่ตรงกัน",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
     "Filter - หาอุปกรณ์ที่ตรงกัน": {
       "main": [
         [
@@ -1749,11 +1747,66 @@
         ]
       ]
     },
-    "Read Equipment Sheet2": {
+    "Webhook - Get Equipment": {
       "main": [
         [
           {
-            "node": "Filter - หาอุปกรณ์ที่ตรงกัน",
+            "node": "Read Equipment Sheet1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read Equipment Sheet1": {
+      "main": [
+        [
+          {
+            "node": "Respond - รายการอุปกรณ์",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Webhook - Get Students": {
+      "main": [
+        [
+          {
+            "node": "Read Students Sheet",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read Students Sheet": {
+      "main": [
+        [
+          {
+            "node": "Respond - รายการนักศึกษา",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Webhook - Get History": {
+      "main": [
+        [
+          {
+            "node": "Read รายการยืม Sheet1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read รายการยืม Sheet1": {
+      "main": [
+        [
+          {
+            "node": "Respond - ประวัติทั้งหมด",
             "type": "main",
             "index": 0
           }
@@ -1764,7 +1817,18 @@
       "main": [
         [
           {
-            "node": "Read รายการยืม Sheet2",
+            "node": "Read รายการยืม Sheet3",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read รายการยืม Sheet3": {
+      "main": [
+        [
+          {
+            "node": "Code - หาเกินกำหนดคืน",
             "type": "main",
             "index": 0
           }
@@ -1786,18 +1850,7 @@
       "main": [
         [
           {
-            "node": "Send Email - สรุปให้ Admin",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Read รายการยืม Sheet2": {
-      "main": [
-        [
-          {
-            "node": "Code - หาเกินกำหนดคืน",
+            "node": "Send Email - สรุปให้ Admin1",
             "type": "main",
             "index": 0
           }
@@ -1810,7 +1863,7 @@
     "executionOrder": "v1",
     "binaryMode": "separate"
   },
-  "versionId": "9e8514d2-c782-4f8e-97cb-5c0ed3f4bcb5",
+  "versionId": "dcfad7ae-945d-4398-b98a-ab408ad97e58",
   "meta": {
     "templateCredsSetupCompleted": true,
     "instanceId": "16c23395182fb3336adb0b7d1ff73d04916796d72a28a7a04b9ef0f7125e176f"

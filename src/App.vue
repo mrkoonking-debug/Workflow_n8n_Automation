@@ -112,22 +112,7 @@ if (typeof window !== 'undefined') {
         </router-link>
       </nav>
 
-      <!-- Connection Status -->
-      <div class="sidebar-connection" @click="checkConnection">
-        <div class="connection-indicator" :class="{ connected: isConnected, checking: isChecking }">
-          <span class="connection-dot"></span>
-          <span class="connection-text">
-            {{ isChecking ? 'กำลังตรวจสอบ...' : isConnected ? 'n8n เชื่อมต่อแล้ว' : 'n8n ไม่เชื่อมต่อ' }}
-          </span>
-        </div>
-      </div>
 
-      <div class="sidebar-footer">
-        <p class="sidebar-footer-text">
-          Smart Lending System<br>
-          © 2026 Smart Library v1.0
-        </p>
-      </div>
     </aside>
 
     <!-- Main Content -->

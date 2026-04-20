@@ -1,6 +1,6 @@
 <script setup>
 import { ref, computed, onMounted } from 'vue'
-import { Doughnut, Bar } from 'vue-chartjs'
+import { Pie, Bar } from 'vue-chartjs'
 import {
   Chart as ChartJS,
   ArcElement,
@@ -90,7 +90,7 @@ const categoryData = computed(() => {
 const doughnutOptions = {
   responsive: true,
   maintainAspectRatio: false,
-  cutout: '65%',
+  cutout: '0%',
   plugins: {
     legend: {
       position: 'bottom',
@@ -99,7 +99,7 @@ const doughnutOptions = {
         font: { family: 'Inter', size: 12 },
         padding: 16,
         usePointStyle: true,
-        pointStyleWidth: 10,
+        pointStyle: 'circle',
       }
     },
     tooltip: {
@@ -280,7 +280,7 @@ function getEquipmentName(id) {
           </div>
           <div class="card-body">
             <div class="chart-container" style="height: 280px;">
-              <Doughnut :data="categoryData" :options="doughnutOptions" />
+              <Pie :data="categoryData" :options="doughnutOptions" />
             </div>
           </div>
         </div>
